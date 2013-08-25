@@ -18,16 +18,20 @@
 
 # Tutorial: watdo + davfs + owncloud
 
-1.  First you will need the proper CalDAV URL for your calendars. For ownCloud
+1.  Install watdo with `pip install --user watdo`.
+
+2.  First you will need the proper CalDAV URL for your calendars. For ownCloud
     5 this is `https://my.server/remote.php/caldav/calendars/yourusername/`.
 
-2.  Configure davfs. I won't go into this. [ArchLinux' wiki has a complete yet
+3.  Configure davfs. I won't go into this. [ArchLinux' wiki has a complete yet
     concise guide on it.](https://wiki.archlinux.org/index.php/Davfs) I'll
     assume you have your `/etc/fstab` set up to mount your calendar at
     `/mnt/calendar`. Add `mount /mnt/calendar` to the autostart of your desktop
     and you won't have to bother about authentication any more.
 
-3.  Set the environment variable `$WATDO_PATH` to `/mnt/calendar`.
+4.  Set the environment variable `$WATDO_PATH` to `/mnt/calendar`.
+
+5.  Run `watdo` from the command line.
 
 
 # All configuration possibilities
