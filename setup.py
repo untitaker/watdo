@@ -18,8 +18,10 @@ setup(
     author='Markus Unterwaditzer',
     author_email='markus@unterwaditzer.net',
     url='https://github.com/untitaker/watdo',
-    description=open('README.md').read(),
+    description='Task-manager for the command line.',
+    long_description=open('README.md').read(),
     packages=find_packages(),
+    include_package_data=True,
     entry_points={
         'console_scripts': ['watdo = watdo.cli:main']
     },
