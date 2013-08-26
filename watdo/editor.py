@@ -20,8 +20,7 @@ DESCRIPTION_INDENT = '    '
 
 def change_modify_event(old_event, new_event):
     def inner():
-        old_event.main.update(dict((k, v) for k, v in
-                                   new_event.main.iteritems() if v))
+        old_event.main.update(new_event.main)
         old_event.main.pop('last-modified', None)
         old_event.main.add('last-modified', datetime.datetime.now())
 
@@ -101,8 +100,6 @@ def parse_tmpfile(lines, description_indent=DESCRIPTION_INDENT):
         for event in events.itervalues():
             event = event.main
             event['description'] = '\n'.join(event['description'])
-            if not event['description']:
-                del event['description']
 
     return ids
 
