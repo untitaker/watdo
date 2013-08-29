@@ -10,7 +10,7 @@
     :license: MIT, see LICENSE for more details.
 '''
 
-from .datastructures import EventWrapper
+from .datastructures import EventWrapper, ParsingError
 from .filesystem import walk_calendars
 import datetime
 import os
@@ -113,14 +113,14 @@ def parse_tmpfile(lines, description_indent=DESCRIPTION_INDENT):
             event_id, event_summary = line.split(u'.  ', 1)
             event_id = int(event_id)
             if event_id in ids[calendar_name]:
-                raise RuntimeError('Line {}: This list index already has been '
+                raise ParsingError('Line {}: This list index already has been '
                                    'used for this calendar'.format(lineno))
 
             ids[calendar_name][event_id] = event = EventWrapper()
             event.summary, event.due = _extract_due_date(event_summary)
             descriptions[calendar_name][event_id] = []
         else:
-            raise RuntimeError('Line {}: Not decipherable'.format(lineno))
+            raise ParsingError('Line {}: Not decipherable'.format(lineno))
 
     for calendar_name, events in descriptions.iteritems():
         for event_id, description in events.iteritems():
@@ -147,14 +147,14 @@ def _extract_due_date(summary):
         return (joined_parts,
                 datetime.datetime.strptime(dt_part, TIME_FORMAT).time())
     else:
-        raise RuntimeError('Invalid date or datetime. [YYYY/mm/dd], [HH:MM] and '
+        raise ParsingError('Invalid date or datetime. [YYYY/mm/dd], [HH:MM] and '
                            '[YYYY/mm/dd HH:MM] are allowed.')
 
 
 def diff_calendars(ids_a, ids_b):
     '''Get difference between two ``ids`` objects'''
     if set(ids_a) != set(ids_b):
-        raise RuntimeError('Adding, renaming and deleting calendars is not '
+        raise ParsingError('Adding, renaming and deleting calendars is not '
                            'supported.', set(ids_a), set(ids_b))
 
     for calendar_name in ids_a:
@@ -189,4 +189,4 @@ def get_changes(old_ids, new_ids):
             yield change_delete_event(old_event)
         else:
             # please don't happen
-            raise RuntimeError('Unknown method: {}'.format(method))
+            raise ParsingError('Unknown method: {}'.format(method))

@@ -64,7 +64,7 @@ def launch_editor(cfg, tmpfilename='todo.markdown'):
         with open(tmpfilepath, 'rb') as f:
             try:
                 new_ids = editor.parse_tmpfile(f)
-            except RuntimeError as e:
+            except ValueError as e:
                 print(e)
                 print('Press enter to edit again...')
                 raw_input()

@@ -110,3 +110,6 @@ def dummy_vcal():
     cal.add_component(todo)
 
     return cal
+
+class ParsingError(ValueError):
+    pass
