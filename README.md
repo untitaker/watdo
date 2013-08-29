@@ -56,7 +56,8 @@
 
 *   It should be more easily scriptable, by exposing CLI options.
 
-*   It should have unit tests.
+*   It should have unit tests. But before that the code needs to become more
+    modular too.
 
 *   Indention of subsequent lines follows the markdown specification (four
     spaces or one tab), but looks really ugly if list indices are > 9.
