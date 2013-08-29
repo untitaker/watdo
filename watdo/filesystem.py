@@ -23,7 +23,7 @@ def walk_calendar(dirpath):
             continue
 
         with open(filepath, 'rb') as f:
-            vcal = Calendar.from_ical(f.read())
+            vcal = f.read()
 
         event = EventWrapper(vcal=vcal, filepath=filepath)
         if event.main is not None:

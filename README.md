@@ -52,9 +52,11 @@
 
 *   It should have a real config file instead of all these envvars.
 
-*   It should expose more metadata, like `STATUS` or `DTEND` to the user.
+*   It should expose more metadata to the user.
 
 *   It should be more easily scriptable, by exposing CLI options.
+
+*   It should have unit tests.
 
 *   Indention of subsequent lines follows the markdown specification (four
     spaces or one tab), but looks really ugly if list indices are > 9.

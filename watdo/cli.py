@@ -26,6 +26,10 @@ def check_directory(path):
 
 
 def confirm_changes(changes):
+    changes = list(changes)
+    if not changes:
+        print('No changes.')
+        return
     for i, (description, func) in enumerate(changes):
         print(u'{}.  {}'.format(i, description))
 
@@ -34,6 +38,10 @@ def confirm_changes(changes):
     reverted = raw_input('> ')
     for i in (int(x.strip()) for x in reverted.split()):
         del changes[i]
+
+    if not changes:
+        print('No changes left.')
+        return
     for description, func in changes:
         print(description)
         func()
@@ -66,12 +74,7 @@ def launch_editor(cfg, tmpfilename='todo.markdown'):
                 print('Press enter to edit again...')
                 raw_input()
 
-    changes = list(editor.get_changes(old_ids, new_ids))
-
-    if not changes:
-        print('No changes.')
-    else:
-        confirm_changes(changes)
+    confirm_changes(editor.get_changes(old_ids, new_ids))
     os.remove(tmpfilepath)
 
 

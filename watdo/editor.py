@@ -16,14 +16,26 @@ import datetime
 import os
 
 DESCRIPTION_INDENT = '    '
+DATE_FORMAT = '%Y/%m/%d'
+TIME_FORMAT = '%H:%M'
+DATETIME_FORMAT = DATE_FORMAT + ' ' + TIME_FORMAT
+
+def _strftime(x):
+    if isinstance(x, datetime.datetime):
+        return x.strftime(DATETIME_FORMAT)
+    elif isinstance(x, datetime.date):
+        return x.strftime(DATE_FORMAT)
+    elif isinstance(x, datetime.time):
+        return x.strftime(TIME_FORMAT)
+    else:
+        raise TypeError()
 
 
 def change_modify_event(old_event, new_event):
     def inner():
-        old_event.main.update(new_event.main)
-        old_event.main.pop('last-modified', None)
-        old_event.main.add('last-modified', datetime.datetime.now())
-
+        old_event.update(new_event)
+        old_event.bump()
+        
         with open(old_event.filepath, 'wb') as f:
             f.write(old_event.vcal.to_ical())
     return u'Modify event: {}'.format(old_event.main.get('summary', '')), inner
@@ -41,6 +53,11 @@ def change_delete_event(event):
         os.remove(event.filepath)
     return u'Delete event: "{}"'.format(event.main.get('summary', '')), inner
 
+def _by_deadline(x):
+    x = x.due
+    if x is None or isinstance(x, datetime.time):
+        return datetime.datetime.now()
+    return datetime.datetime(x.year, x.month, x.day)
 
 def generate_tmpfile(f, calendars_path, description_indent=DESCRIPTION_INDENT):
     '''Given a file-like object ``f`` and a path, write todo file to ``f``,
@@ -48,20 +65,23 @@ def generate_tmpfile(f, calendars_path, description_indent=DESCRIPTION_INDENT):
 
     calendars = walk_calendars(calendars_path)
     ids = {}
-    p = lambda x=u'': f.write((x + u'\n').encode('utf-8'))
+    p = lambda x=u'', newline=u'\n': f.write((x + newline).encode('utf-8'))
 
     for calendar, events in sorted(calendars, key=lambda x: x[0]):
         # sort by name
         p()
         p(u'# {}'.format(calendar))
         # sort by deadline
-        events.sort(key=(lambda x:
-                         x.main.get('dtend', None) or datetime.datetime.now()))
+        events.sort(key=_by_deadline)
         ids.setdefault(calendar, {})
 
         for i, event in enumerate(events, start=1):
             ids[calendar][i] = event
-            p(u'{i}.  {t}'.format(i=i, t=event.main.get('summary', '')))
+            p(u'{i}.  {t}'.format(i=i, t=event.main.get('summary', '')), u'')
+            if event.due is not None:
+                p(u' [{}]'.format(_strftime(event.due)))
+            else:
+                p()
             for l in event.main.get('description', '').splitlines():
                 p(description_indent + l)
     return ids
@@ -71,6 +91,7 @@ def parse_tmpfile(lines, description_indent=DESCRIPTION_INDENT):
     ids = {}
     calendar_name = None
     event_id = None
+    descriptions = {}
 
     for lineno, line in enumerate(lines, start=1):
         line = line.decode('utf-8').rstrip('\n')
@@ -78,30 +99,52 @@ def parse_tmpfile(lines, description_indent=DESCRIPTION_INDENT):
             if event_id:
                 if line:
                     line = line[len(description_indent):]
-                ids[calendar_name][event_id].main['description'].append(line)
+                descriptions[calendar_name][event_id].append(line)
         elif line.startswith(u'# '):
             calendar_name = line[2:]
             event_id = None
             ids[calendar_name] = {}
+            descriptions[calendar_name] = {}
         elif calendar_name and line[0].isdigit():
             event_id, event_summary = line.split(u'.  ', 1)
             event_id = int(event_id)
             if event_id in ids[calendar_name]:
                 raise RuntimeError('Line {}: This list index already has been '
                                    'used for this calendar'.format(lineno))
-            ids[calendar_name][event_id] = EventWrapper(main={
-                'summary': event_summary,
-                'description': []
-            })
+
+            ids[calendar_name][event_id] = event = EventWrapper()
+            event.summary, event.due = _extract_due_date(event_summary)
+            descriptions[calendar_name][event_id] = []
         else:
             raise RuntimeError('Line {}: Not decipherable'.format(lineno))
 
-    for events in ids.itervalues():
-        for event in events.itervalues():
-            event = event.main
-            event['description'] = '\n'.join(event['description'])
+    for calendar_name, events in descriptions.iteritems():
+        for event_id, description in events.iteritems():
+            ids[calendar_name][event_id].description = '\n'.join(description)
 
     return ids
+
+def _extract_due_date(summary):
+    if not summary.endswith(u']'):
+        return summary, None
+    parts = summary.split(u' [')
+    if len(parts) < 2:
+        return summary, None
+    dt_part = parts.pop()[:-1]
+    joined_parts = u' ['.join(parts)
+
+    if u' ' in dt_part:
+        return (joined_parts,
+                datetime.datetime.strptime(dt_part, DATETIME_FORMAT))
+    elif u'/' in dt_part:
+        return (joined_parts,
+                datetime.datetime.strptime(dt_part, DATE_FORMAT).date())
+    elif u':' in dt_part:
+        return (joined_parts,
+                datetime.datetime.strptime(dt_part, TIME_FORMAT).time())
+    else:
+        raise RuntimeError('Invalid date or datetime. [YYYY/mm/dd], [HH:MM] and '
+                           '[YYYY/mm/dd HH:MM] are allowed.')
 
 
 def diff_calendars(ids_a, ids_b):
@@ -121,13 +164,10 @@ def diff_calendars(ids_a, ids_b):
             elif event_id in calendar_a and event_id not in calendar_b:
                 yield 'del', calendar_name, event_id
             else:
-                event_a = calendar_a[event_id].main
-                event_b = calendar_b[event_id].main
+                ev_a = calendar_a[event_id]
+                ev_b = calendar_b[event_id]
 
-                if event_a.get('summary', '').rstrip() != \
-                   event_b.get('summary', '').rstrip() or \
-                   event_a.get('description', '').rstrip() != \
-                   event_b.get('description', '').rstrip():
+                if ev_a != ev_b:
                     yield 'mod', calendar_name, event_id
 
 
