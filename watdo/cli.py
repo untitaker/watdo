@@ -29,22 +29,17 @@ def confirm_changes(changes):
     changes = list(changes)
     if not changes:
         print('No changes.')
-        return
-    for i, (description, func) in enumerate(changes):
-        print(u'{}.  {}'.format(i, description))
+    else:
+        for i, (description, func) in enumerate(changes):
+            print(u'{}.  {}'.format(i, description))
 
-    print('Enter changes you don\'t want to happen.')
-    print('By number, space separated.')
-    reverted = raw_input('> ')
-    for i in (int(x.strip()) for x in reverted.split()):
-        del changes[i]
+        print('Enter changes you don\'t want to happen.')
+        print('By number, space separated.')
+        reverted = raw_input('> ')
+        for i in (int(x.strip()) for x in reverted.split()):
+            del changes[i]
 
-    if not changes:
-        print('No changes left.')
-        return
-    for description, func in changes:
-        print(description)
-        func()
+    return changes
 
 
 def confirm(message='Are you sure? (Y/n)'):
@@ -74,7 +69,11 @@ def launch_editor(cfg, tmpfilename='todo.markdown'):
                 print('Press enter to edit again...')
                 raw_input()
 
-    confirm_changes(editor.get_changes(old_ids, new_ids))
+    changes = confirm_changes(editor.get_changes(old_ids, new_ids))
+    for description, func in changes:
+        print(description)
+        func(cfg)
+    
     os.remove(tmpfilepath)
 
 

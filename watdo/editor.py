@@ -32,7 +32,7 @@ def _strftime(x):
 
 
 def change_modify_event(old_event, new_event):
-    def inner():
+    def inner(cfg):
         old_event.update(new_event)
         old_event.bump()
         
@@ -41,15 +41,19 @@ def change_modify_event(old_event, new_event):
     return u'Modify event: {}'.format(old_event.main.get('summary', '')), inner
 
 
-def change_add_event(event):
-    '''event is actually a simple dict'''
-    def inner():
-        raise NotImplementedError('Adding events is not yet implemented.')
+def change_add_event(event, calendar_name):
+    def inner(cfg):
+        fname = event.main['uid'].split('@')[0] + u'.ics'
+        fpath = os.path.join(cfg['PATH'], calendar_name, fname)
+        event.filepath = fpath
+        with open(event.filepath, 'wb+') as f:
+            f.write(event.vcal.to_ical())
+
     return u'Add event: "{}"'.format(event.main.get('summary', '')), inner
 
 
 def change_delete_event(event):
-    def inner():
+    def inner(cfg):
         os.remove(event.filepath)
     return u'Delete event: "{}"'.format(event.main.get('summary', '')), inner
 
@@ -179,7 +183,7 @@ def get_changes(old_ids, new_ids):
             yield change_modify_event(old_event, new_event)
         elif method == 'add':
             new_event = new_ids[calendar_name][event_id]
-            yield change_add_event(new_event)
+            yield change_add_event(new_event, calendar_name)
         elif method == 'del':
             old_event = old_ids[calendar_name][event_id]
             yield change_delete_event(old_event)
