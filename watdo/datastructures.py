@@ -38,6 +38,11 @@ class EventWrapper(object):
         self.filepath = filepath
 
 
+    def write(self):
+        with open(self.filepath, 'wb') as f:
+            f.write(self.vcal.to_ical())
+
+
     def update(self, other):
         self.due = other.due
         self.summary = other.summary
@@ -82,6 +87,17 @@ class EventWrapper(object):
             self.main['description'] = val
         else:
             self.main.pop('description', None)
+
+    @property
+    def status(self):
+        return self.main.get('status', '')
+
+    @status.setter
+    def status(self, val):
+        if val:
+            self.main['status'] = val
+        else:
+            self.main.pop('status', None)
 
     def __cmp__(self, x):
         return 0 if self.__eq__(x) else -1

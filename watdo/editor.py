@@ -20,6 +20,7 @@ DATE_FORMAT = '%Y/%m/%d'
 TIME_FORMAT = '%H:%M'
 DATETIME_FORMAT = DATE_FORMAT + ' ' + TIME_FORMAT
 
+
 def _strftime(x):
     if isinstance(x, datetime.datetime):
         return x.strftime(DATETIME_FORMAT)
@@ -31,45 +32,24 @@ def _strftime(x):
         raise TypeError()
 
 
-def change_modify_event(old_event, new_event):
-    def inner(cfg):
-        old_event.update(new_event)
-        old_event.bump()
-        
-        with open(old_event.filepath, 'wb') as f:
-            f.write(old_event.vcal.to_ical())
-    return u'Modify event: {}'.format(old_event.main.get('summary', '')), inner
-
-
-def change_add_event(event, calendar_name):
-    def inner(cfg):
-        fname = event.main['uid'].split('@')[0] + u'.ics'
-        fpath = os.path.join(cfg['PATH'], calendar_name, fname)
-        event.filepath = fpath
-        with open(event.filepath, 'wb+') as f:
-            f.write(event.vcal.to_ical())
-
-    return u'Add event: "{}"'.format(event.main.get('summary', '')), inner
-
-
-def change_delete_event(event):
-    def inner(cfg):
-        os.remove(event.filepath)
-    return u'Delete event: "{}"'.format(event.main.get('summary', '')), inner
-
 def _by_deadline(x):
     x = x.due
     if x is None or isinstance(x, datetime.time):
         return datetime.datetime.now()
     return datetime.datetime(x.year, x.month, x.day)
 
-def generate_tmpfile(f, calendars_path, description_indent=DESCRIPTION_INDENT):
+
+def generate_tmpfile(f, cfg, description_indent=DESCRIPTION_INDENT):
     '''Given a file-like object ``f`` and a path, write todo file to ``f``,
     return a ``ids`` object'''
 
-    calendars = walk_calendars(calendars_path)
     ids = {}
     p = lambda x=u'', newline=u'\n': f.write((x + newline).encode('utf-8'))
+
+    calendars = walk_calendars(cfg['PATH'], all_events=cfg['SHOW_ALL_TASKS']) 
+
+    if cfg['SHOW_ALL_TASKS']:
+        p(u'// Showing all tasks')
 
     for calendar, events in sorted(calendars, key=lambda x: x[0]):
         # sort by name
@@ -99,7 +79,9 @@ def parse_tmpfile(lines, description_indent=DESCRIPTION_INDENT):
 
     for lineno, line in enumerate(lines, start=1):
         line = line.decode('utf-8').rstrip('\n')
-        if line.startswith(description_indent) or not line:
+        if line.startswith(u'//'):
+            pass
+        elif line.startswith(description_indent) or not line:
             if event_id:
                 if line:
                     line = line[len(description_indent):]
@@ -128,6 +110,7 @@ def parse_tmpfile(lines, description_indent=DESCRIPTION_INDENT):
 
     return ids
 
+
 def _extract_due_date(summary):
     if not summary.endswith(u']'):
         return summary, None
@@ -147,8 +130,9 @@ def _extract_due_date(summary):
         return (joined_parts,
                 datetime.datetime.strptime(dt_part, TIME_FORMAT).time())
     else:
-        raise ParsingError('Invalid date or datetime. [YYYY/mm/dd], [HH:MM] and '
-                           '[YYYY/mm/dd HH:MM] are allowed.')
+        raise ParsingError('Invalid date or datetime. '
+                           '[YYYY/mm/dd], [HH:MM] and [YYYY/mm/dd HH:MM] '
+                           'are allowed.')
 
 
 def diff_calendars(ids_a, ids_b):
@@ -174,19 +158,59 @@ def diff_calendars(ids_a, ids_b):
                 if ev_a != ev_b:
                     yield 'mod', calendar_name, event_id
 
-
-def get_changes(old_ids, new_ids):
+def get_changes(old_ids, new_ids, cfg):
     for method, calendar_name, event_id in diff_calendars(old_ids, new_ids):
         if method == 'mod':
             old_event = old_ids[calendar_name][event_id]
             new_event = new_ids[calendar_name][event_id]
-            yield change_modify_event(old_event, new_event)
+
+            description = u'Modify event: '
+            if old_event.summary == new_event.summary:
+                description += new_summary
+            else:
+                description += u'{} => {}'.format(old_event.summary,
+                                                 new_event.summary)
+
+            yield description, change_modify_event(cfg, old_event, new_event)
         elif method == 'add':
             new_event = new_ids[calendar_name][event_id]
-            yield change_add_event(new_event, calendar_name)
+            yield (u'Add: {}'.format(new_event.summary),
+                   change_add_event(cfg, new_event, calendar_name))
         elif method == 'del':
             old_event = old_ids[calendar_name][event_id]
-            yield change_delete_event(old_event)
+            if cfg['SHOW_ALL_TASKS']:
+                yield (u'Delete: {}'.format(old_event.summary),
+                       change_delete_event(cfg, old_event))
+            else:
+                new_event = old_event
+                new_event.status = 'COMPLETED'
+                yield (u'Mark as done: {}'.format(old_event.summary),
+                       change_modify_event(cfg, old_event, new_event))
         else:
             # please don't happen
             raise ParsingError('Unknown method: {}'.format(method))
+
+
+def change_modify_event(cfg, old_event, new_event):
+    def inner(cfg):
+        old_event.update(new_event)
+        old_event.bump()
+        old_event.write()
+    return inner
+
+
+def change_add_event(cfg, event, calendar_name):
+    def inner(cfg):
+        fname = event.main['uid'].split('@')[0] + u'.ics'
+        fpath = os.path.join(cfg['PATH'], calendar_name, fname)
+        event.filepath = fpath
+        with open(event.filepath, 'wb+') as f:
+            f.write(event.vcal.to_ical())
+
+    return inner
+
+
+def change_delete_event(cfg, event):
+    def inner(cfg):
+        os.remove(event.filepath)
+    return inner

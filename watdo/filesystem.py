@@ -12,11 +12,10 @@
 
 
 import os
-from icalendar import Calendar
 from .datastructures import EventWrapper
 
 
-def walk_calendar(dirpath):
+def walk_calendar(dirpath, all_events):
     for filename in os.listdir(dirpath):
         filepath = os.path.join(dirpath, filename)
         if not os.path.isfile(filepath):
@@ -26,18 +25,20 @@ def walk_calendar(dirpath):
             vcal = f.read()
 
         event = EventWrapper(vcal=vcal, filepath=filepath)
-        if event.main is not None:
+        if event.main is not None and \
+            (event.status not in ('COMPLETED', 'CANCELLED') or
+             all_events):
             yield event
 
 
-def walk_calendars(path):
+def walk_calendars(path, all_events):
     ''' walk_calendars(path) -> calendar_name, events
-    events = [(filepath, event), ...]'''
+    events = [(event), ...]'''
 
     for dirname in os.listdir(path):
         dirpath = os.path.join(path, dirname)
         if os.path.isfile(dirpath):
             continue
-        events = list(walk_calendar(dirpath))
+        events = list(walk_calendar(dirpath, all_events))
         if events:
             yield dirname, events
