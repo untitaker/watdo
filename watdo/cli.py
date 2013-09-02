@@ -12,7 +12,6 @@
 
 
 import watdo.editor as editor
-import watdo.filesystem as filesystem
 from os import environ as env
 import subprocess
 import os
@@ -75,18 +74,18 @@ def launch_editor(cfg, tmpfilename='todo.markdown'):
     for description, func in changes:
         print(description)
         func(cfg)
-    
+
     os.remove(tmpfilepath)
 
 
 def get_argument_parser():
     parser = argparse.ArgumentParser(description='Simple task-list manager.')
-    parser.add_argument('--all', '-a', dest='show_all_tasks', action='store_const',
-                        const=True, default=None,
-                        help=('Watdo normally shows only uncompleted tasks and '
-                        'marks them as done if they get deleted from the '
-                        'tmpfile. This mode will make watdo show all tasks and '
-                        'actually delete them.'))
+    parser.add_argument('--all', '-a', dest='show_all_tasks',
+                        action='store_const', const=True, default=None,
+                        help=('Watdo normally shows only uncompleted tasks '
+                              'and marks them as done if they get deleted '
+                              'from the tmpfile. This mode will make watdo '
+                              'show all tasks and actually delete them.'))
     return parser
 
 
@@ -103,7 +102,6 @@ def main():
 
     args = get_argument_parser().parse_args()
     cfg['SHOW_ALL_TASKS'] = args.show_all_tasks
-
 
     check_directory(cfg['PATH'])
     check_directory(cfg['TMPPATH'])

@@ -10,12 +10,13 @@
     :license: MIT, see LICENSE for more details.
 '''
 
-from .datastructures import EventWrapper, ParsingError
-from .filesystem import walk_calendars
+from .model import EventWrapper, ParsingError, walk_calendars
 import datetime
 import os
 
-DESCRIPTION_INDENT = '    '
+DESCRIPTION_INDENT = u'    '
+FLAGS_PREFIX = u' -- '
+FLAGS_DELIMITER = u'; '
 DATE_FORMAT = '%Y/%m/%d'
 TIME_FORMAT = '%H:%M'
 DATETIME_FORMAT = DATE_FORMAT + ' ' + TIME_FORMAT
@@ -44,7 +45,7 @@ def generate_tmpfile(f, cfg, description_indent=DESCRIPTION_INDENT):
     return a ``ids`` object'''
 
     ids = {}
-    p = lambda x=u'', newline=u'\n': f.write((x + newline).encode('utf-8'))
+    p = lambda x: f.write(x.encode('utf-8'))
 
     calendars = walk_calendars(cfg['PATH'], all_events=cfg['SHOW_ALL_TASKS']) 
 
@@ -53,21 +54,30 @@ def generate_tmpfile(f, cfg, description_indent=DESCRIPTION_INDENT):
 
     for calendar, events in sorted(calendars, key=lambda x: x[0]):
         # sort by name
-        p()
+        p(u'\n')
         p(u'# {}'.format(calendar))
+        p(u'\n')
         # sort by deadline
         events.sort(key=_by_deadline)
         ids.setdefault(calendar, {})
 
         for i, event in enumerate(events, start=1):
             ids[calendar][i] = event
-            p(u'{i}.  {t}'.format(i=i, t=event.main.get('summary', '')), u'')
+            flags = []
             if event.due is not None:
-                p(u' [{}]'.format(_strftime(event.due)))
-            else:
-                p()
-            for l in event.main.get('description', '').splitlines():
+                flags.append(_strftime(event.due))
+            if event.status:
+                flags.append(event.status)
+
+            p(u'{}.  '.format(i))
+            p(event.summary)
+            if flags:
+                p(FLAGS_PREFIX)
+                p(FLAGS_DELIMITER.join(flags))
+            p(u'\n')
+            for l in event.description.splitlines():
                 p(description_indent + l)
+                p(u'\n')
     return ids
 
 
@@ -78,7 +88,7 @@ def parse_tmpfile(lines, description_indent=DESCRIPTION_INDENT):
     descriptions = {}
 
     for lineno, line in enumerate(lines, start=1):
-        line = line.decode('utf-8').rstrip('\n')
+        line = line.decode('utf-8').rstrip(u'\n')
         if line.startswith(u'//'):
             pass
         elif line.startswith(description_indent) or not line:
@@ -99,40 +109,60 @@ def parse_tmpfile(lines, description_indent=DESCRIPTION_INDENT):
                                    'used for this calendar'.format(lineno))
 
             ids[calendar_name][event_id] = event = EventWrapper()
-            event.summary, event.due = _extract_due_date(event_summary)
+            event.summary, flags = _parse_flags(event_summary)
+            event.due = _extract_due_date(flags)
+            event.status = _extract_status(flags)
+            if flags:
+                raise ParsingError(u'Line {i}: Unknown flags: {t}'.format(i=lineno, t=flags))
             descriptions[calendar_name][event_id] = []
         else:
             raise ParsingError('Line {}: Not decipherable'.format(lineno))
 
     for calendar_name, events in descriptions.iteritems():
         for event_id, description in events.iteritems():
-            ids[calendar_name][event_id].description = '\n'.join(description)
+            ids[calendar_name][event_id].description = u'\n'.join(description)
 
     return ids
 
 
-def _extract_due_date(summary):
-    if not summary.endswith(u']'):
-        return summary, None
-    parts = summary.split(u' [')
-    if len(parts) < 2:
-        return summary, None
-    dt_part = parts.pop()[:-1]
-    joined_parts = u' ['.join(parts)
+def _parse_flags(text):
+    res = text.rsplit(FLAGS_PREFIX, 1)
+    if len(res) < 2:
+        return text, []
+    summary, flags = res
+    return summary, filter(bool, (x.strip() for x in flags.split(FLAGS_DELIMITER)))
 
-    if u' ' in dt_part:
-        return (joined_parts,
-                datetime.datetime.strptime(dt_part, DATETIME_FORMAT))
-    elif u'/' in dt_part:
-        return (joined_parts,
-                datetime.datetime.strptime(dt_part, DATE_FORMAT).date())
-    elif u':' in dt_part:
-        return (joined_parts,
-                datetime.datetime.strptime(dt_part, TIME_FORMAT).time())
-    else:
-        raise ParsingError('Invalid date or datetime. '
-                           '[YYYY/mm/dd], [HH:MM] and [YYYY/mm/dd HH:MM] '
-                           'are allowed.')
+
+def _extract_due_date(flags):
+    '''Allowed values for due:
+        YYYY/MM/DD
+        YYYY/MM/DD HH:mm
+        HH:mm
+    '''
+    for i, flag in enumerate(flags):
+        try:
+            if u' ' in flag:
+                rv = datetime.datetime.strptime(flag, DATETIME_FORMAT)
+            elif u'/' in flag:
+                rv = datetime.datetime.strptime(flag, DATE_FORMAT).date()
+            elif u':' in flag:
+                rv = datetime.datetime.strptime(flag, TIME_FORMAT).time()
+            else:
+                raise ValueError()
+        except ValueError:
+            pass
+        else:
+            del flags[i]
+            return rv
+            
+
+def _extract_status(flags):
+    for i, flag in enumerate(flags):
+        if flag in (u'COMPLETED', u'IN-PROCESS', u'CANCELLED', u'NEEDS-ACTION'):
+            del flags[i]
+            return flag
+
+    return u''
 
 
 def diff_calendars(ids_a, ids_b):
@@ -164,9 +194,9 @@ def get_changes(old_ids, new_ids, cfg):
             old_event = old_ids[calendar_name][event_id]
             new_event = new_ids[calendar_name][event_id]
 
-            description = u'Modify event: '
+            description = u'Modify: '
             if old_event.summary == new_event.summary:
-                description += new_summary
+                description += new_event.summary
             else:
                 description += u'{} => {}'.format(old_event.summary,
                                                  new_event.summary)
@@ -178,14 +208,8 @@ def get_changes(old_ids, new_ids, cfg):
                    change_add_event(cfg, new_event, calendar_name))
         elif method == 'del':
             old_event = old_ids[calendar_name][event_id]
-            if cfg['SHOW_ALL_TASKS']:
-                yield (u'Delete: {}'.format(old_event.summary),
-                       change_delete_event(cfg, old_event))
-            else:
-                new_event = old_event
-                new_event.status = 'COMPLETED'
-                yield (u'Mark as done: {}'.format(old_event.summary),
-                       change_modify_event(cfg, old_event, new_event))
+            yield (u'Delete: {}'.format(old_event.summary),
+                   change_delete_event(cfg, old_event))
         else:
             # please don't happen
             raise ParsingError('Unknown method: {}'.format(method))

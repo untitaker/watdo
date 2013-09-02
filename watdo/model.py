@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 '''
-    watdo.datastructures
-    ~~~~~~~~~~~~~~~~~~~~
+    watdo.model
+    ~~~~~~~~~~~
 
-    This module provides datastructures for things that are not sufficiently
-    representable with native types.
+    This module provides datastructures to represent and helper functions to
+    access data on the filesystem.
 
     :copyright: (c) 2013 Markus Unterwaditzer
     :license: MIT, see LICENSE for more details.
@@ -12,6 +12,7 @@
 import datetime
 import icalendar
 import icalendar.tools
+import os
 
 
 class EventWrapper(object):
@@ -37,16 +38,15 @@ class EventWrapper(object):
         self.main = main
         self.filepath = filepath
 
-
     def write(self):
         with open(self.filepath, 'wb') as f:
             f.write(self.vcal.to_ical())
-
 
     def update(self, other):
         self.due = other.due
         self.summary = other.summary
         self.description = other.description
+        self.status = other.status
 
     def bump(self):
         self.main.pop('last-modified', None)
@@ -72,10 +72,13 @@ class EventWrapper(object):
 
     @summary.setter
     def summary(self, val):
+        self.main.pop('summary', None)
         if val:
             self.main['summary'] = val
-        else:
-            self.main.pop('summary', None)
+
+    @property
+    def done(self):
+        return self.status in (u'COMPLETED', u'CANCELLED')
 
     @property
     def description(self):
@@ -83,36 +86,38 @@ class EventWrapper(object):
 
     @description.setter
     def description(self, val):
+        self.main.pop('description', None)
         if val:
             self.main['description'] = val
-        else:
-            self.main.pop('description', None)
 
     @property
     def status(self):
-        return self.main.get('status', '')
+        return self.main.get('status', u'')
 
     @status.setter
     def status(self, val):
+        self.main.pop('status', None)
         if val:
             self.main['status'] = val
-        else:
-            self.main.pop('status', None)
 
     def __cmp__(self, x):
         return 0 if self.__eq__(x) else -1
 
     def __eq__(self, other):
-        return isinstance(other, type(self)) and \
-               self.summary.rstrip(u'\n') == other.summary.rstrip(u'\n') and \
-               self.description.rstrip(u'\n') == other.description.rstrip(u'\n') and \
-               self.due == other.due
+        return (
+            isinstance(other, type(self)) and
+            self.summary.rstrip(u'\n') == other.summary.rstrip(u'\n') and
+            self.description.rstrip(u'\n') == other.description.rstrip(u'\n') and
+            self.due == other.due and
+            self.status == other.status
+        )
 
     def __repr__(self):
         return 'EventWrapper({})'.format({
             'description': self.description,
             'summary': self.summary,
-            'due': self.due
+            'due': self.due,
+            'status': self.status
         })
 
 
@@ -127,5 +132,33 @@ def dummy_vcal():
 
     return cal
 
+
 class ParsingError(ValueError):
     pass
+
+
+def walk_calendar(dirpath, all_events):
+    for filename in os.listdir(dirpath):
+        filepath = os.path.join(dirpath, filename)
+        if not os.path.isfile(filepath):
+            continue
+
+        with open(filepath, 'rb') as f:
+            vcal = f.read()
+
+        event = EventWrapper(vcal=vcal, filepath=filepath)
+        if event.main is not None and (not event.done or all_events):
+            yield event
+
+
+def walk_calendars(path, all_events):
+    ''' walk_calendars(path) -> calendar_name, events
+    events = [(event), ...]'''
+
+    for dirname in os.listdir(path):
+        dirpath = os.path.join(path, dirname)
+        if os.path.isfile(dirpath):
+            continue
+        events = list(walk_calendar(dirpath, all_events))
+        if events:
+            yield dirname, events
