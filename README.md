@@ -16,7 +16,7 @@
 *   Watdo is written in Python 2 and depends on the icalendar package on PyPI.
 
 
-# Tutorial: watdo + davfs + owncloud
+# Full tutorial: watdo + davfs + owncloud
 
 1.  Install watdo with `pip install --user watdo`.
 
@@ -32,6 +32,36 @@
 4.  Set the environment variable `$WATDO_PATH` to `/mnt/calendar`.
 
 5.  Run `watdo` from the command line.
+
+6.  `$EDITOR` should open. Edit the file as you wish. It's a markdown file that
+    maps calendars/task-lists to markdown headlines and tasks to list items.
+
+    The first line contains the summary and some other metadata. It looks
+    something like this:
+
+        `SUMMARY[ -- FLAGS]`
+
+    The flags part is a semicolon (`;`) separated list of the following
+    properties, all of them optional:
+
+      - Date (`YYYY/mm/dd`), time (`HH:MM`) xor datetime (`YYYY/mm/dd HH:MM`).
+      - Status -- one of the values specified in
+        [the iCalendar standard](http://www.kanzaki.com/docs/ical/status.html).
+
+    If you get the syntax of your file wrong, watdo *should* allow you to edit
+    it again after showing an error. It's still in alpha though.
+
+7.  Save and close the file. Watdo shows all changes you've made in a basic
+    overview:
+    
+        `0.  Modify: My cool task => My super-cool task`
+        `1.  Delete: Something useless`
+
+    If you don't want watdo to do these things, enter ``0 1`` and hit enter.
+    You could also hit `^C`.
+
+8.  Tasks with the status `COMPLETED` or `CANCELLED` are not shown by default.
+    You can view these tasks with `watdo -a`.
 
 
 # All configuration possibilities
