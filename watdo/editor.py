@@ -40,17 +40,17 @@ def _by_deadline(x):
     return datetime.datetime(x.year, x.month, x.day)
 
 
-def generate_tmpfile(f, cfg, description_indent=DESCRIPTION_INDENT):
+def generate_tmpfile(f, cfg, calendars, description_indent=DESCRIPTION_INDENT):
     '''Given a file-like object ``f`` and a path, write todo file to ``f``,
     return a ``ids`` object'''
 
     ids = {}
     p = lambda x: f.write(x.encode('utf-8'))
 
-    calendars = walk_calendars(cfg['PATH'], all_events=cfg['SHOW_ALL_TASKS']) 
-
     if cfg['SHOW_ALL_TASKS']:
         p(u'// Showing all tasks')
+    else:
+        p(u'// Showing pending tasks (run `watdo -a` to show all)')
 
     for calendar, events in sorted(calendars, key=lambda x: x[0]):
         # sort by name

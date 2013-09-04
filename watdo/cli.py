@@ -12,7 +12,6 @@
 
 
 import watdo.editor as editor
-from os import environ as env
 import subprocess
 import os
 import argparse
@@ -54,7 +53,12 @@ def launch_editor(cfg, tmpfilename='todo.markdown'):
     tmpfilepath = os.path.join(cfg['TMPPATH'], tmpfilename)
 
     with open(tmpfilepath, 'wb+') as f:
-        old_ids = editor.generate_tmpfile(f, cfg)
+        old_ids = editor.generate_tmpfile(f, cfg,
+            editor.walk_calendars(
+                cfg['PATH'],
+                all_events=cfg['SHOW_ALL_TASKS']
+            )
+        )
 
     new_ids = None
     while new_ids is None:
@@ -89,7 +93,7 @@ def get_argument_parser():
     return parser
 
 
-def main():
+def _main(env, args):
     pjoin = os.path.join
     abspath = os.path.abspath
     cfg = {
@@ -100,9 +104,11 @@ def main():
         'EDITOR': env.get('WATDO_EDITOR') or env.get('EDITOR') or None
     }
 
-    args = get_argument_parser().parse_args()
-    cfg['SHOW_ALL_TASKS'] = args.show_all_tasks
+    cfg['SHOW_ALL_TASKS'] = args['show_all_tasks']
 
     check_directory(cfg['PATH'])
     check_directory(cfg['TMPPATH'])
     launch_editor(cfg)
+
+def main():
+    _main(env=os.environ, args=vars(get_argument_parser().parse_args()))

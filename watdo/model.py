@@ -16,27 +16,39 @@ import os
 
 
 class EventWrapper(object):
-    vcal = None  # full file content, parsed (VCALENDAR)
-    main = None  # the main object (VTODO, VEVENT)
     filepath = None  # the absolute filepath
+    _vcal = _main = None
 
-    def __init__(self, vcal=None, main=None, filepath=None):
-        if vcal is not None and main is not None:
-            raise TypeError()
-        if isinstance(vcal, (str, unicode)):
-            vcal = icalendar.Calendar.from_ical(vcal)
-        if vcal is None:
-            vcal = dummy_vcal()
+    def __init__(self, **kwargs):
+        for k, v in kwargs.items():  # meh
+            setattr(self, k, v)
 
-        if main is None:
-            for component in vcal.walk():
+    @property
+    def vcal(self):
+        '''full file content, parsed (VCALENDAR)'''
+        if self._vcal is None:
+            self._vcal = dummy_vcal()
+        return self._vcal
+
+    @vcal.setter
+    def vcal(self, val):
+        if isinstance(val, (str, unicode)):
+            val = icalendar.Calendar.from_ical(val)
+        self._vcal = val
+
+    @property
+    def main(self):
+        '''the main object (VTODO, VEVENT)'''
+        if self._main is None:
+            for component in self.vcal.walk():
                 if component.name == 'VTODO':
-                    main = component
+                    self._main = component
                     break
+        return self._main
 
-        self.vcal = vcal
-        self.main = main
-        self.filepath = filepath
+    @main.setter
+    def main(self, val):
+        self._main = val
 
     def write(self):
         with open(self.filepath, 'wb') as f:
@@ -54,7 +66,6 @@ class EventWrapper(object):
 
     @property
     def due(self):
-        '''How about actual datetimes if it's called *dt*end?'''
         dt = self.main.get('due', None)
         if dt is None:
             return None
