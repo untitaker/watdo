@@ -77,15 +77,3 @@
     not default to `/tmp`, because its permissions allow other system users to
     delete the file and recreate it with different content. Instead, it
     defaults to `~/.watdo/tmp/`.
-
-
-# Things that are broken right now
-
-*   It should have a real config file instead of all these envvars.
-
-*   It should expose more metadata to the user.
-
-*   It should be more easily scriptable, by exposing CLI options.
-
-*   Indention of subsequent lines follows the markdown specification (four
-    spaces or one tab), but looks really ugly if list indices are > 9.
