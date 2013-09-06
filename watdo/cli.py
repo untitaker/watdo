@@ -15,15 +15,14 @@ import watdo.editor as editor
 import subprocess
 import tempfile
 import os
+import sys
 import argparse
+import ConfigParser
 
 
 def check_directory(path):
     if not os.path.exists(path):
-        if confirm(u'Directory {} doesn\'t exist. Create? (Y/n)'.format(path)):
-            os.makedirs(path)
-        else:
-            raise RuntimeError(u'Directory {} doesn\'t exist.'.format(path))
+        os.makedirs(path)
 
 
 def confirm_changes(changes):
@@ -43,11 +42,18 @@ def confirm_changes(changes):
     return changes
 
 
+def path(p):
+        p = os.path.expanduser(p)
+        p = os.path.abspath(p)
+        return p
+
+
 def confirm(message='Are you sure? (Y/n)'):
     inp = raw_input(message).lower().strip()
     if not inp or inp == 'y':
         return True
     return False
+
 
 def launch_editor(cfg, tmpfilesuffix='.markdown'):
     tmpfile = tempfile.NamedTemporaryFile(dir=cfg['TMPPATH'],
@@ -95,22 +101,71 @@ def get_argument_parser():
     return parser
 
 
-def _main(env, args):
-    pjoin = os.path.join
-    abspath = os.path.abspath
+def create_config_file():
+    def input(msg):
+        return raw_input(msg + ' ').strip() or None
     cfg = {
-        'PATH': abspath(env.get('WATDO_PATH')
-                        or pjoin(env['HOME'], '.watdo/tasks/')),
-        'TMPPATH': abspath(env.get('WATDO_TMPPATH')
-                           or pjoin(env['HOME'], '.watdo/tmp/')),
-        'EDITOR': env.get('WATDO_EDITOR') or env.get('EDITOR') or None
+        'editor': input('Your favorite editor? [default: $EDITOR]'),
+        'path': input('Where are your tasks stored? '
+                      '[default: ~/.watdo/tasks/]'),
+        'tmppath': input('Where should tmpfiles for editing be stored? '
+                         '[default: ~/.watdo/tmp/]')
+    }
+    for k, v in cfg.items():
+        if not v:
+            continue
+        yield k, v
+
+
+def get_config_parser(env):
+    fname = env.get('WATDO_CONFIG', path('~/.watdo/config'))
+    parser = ConfigParser.SafeConfigParser()
+    parser.add_section('watdo')
+    if not os.path.exists(fname) and \
+       confirm('Config file {} doesn\'t exist. '
+               'Create? (Y/n)'.format(fname)):
+        check_directory(os.path.dirname(fname))
+        for k, v in create_config_file():
+            parser.set('watdo', k, v)
+        with open(fname, 'wb+') as f:
+            parser.write(f)
+
+    parser.read(fname)
+    return dict(parser.items('watdo'))
+
+
+def _main(env, args, cfg):
+    
+    def bail_out(msg):
+        print(msg)
+        sys.exit(1)
+        
+    new_cfg = {
+        'PATH': path(
+            env.get('WATDO_PATH') or
+            cfg.get('path') or
+            '~/.watdo/tasks/'
+        ),
+        'TMPPATH': path(
+            env.get('WATDO_TMPPATH') or 
+            cfg.get('tmppath') or
+            '~/.watdo/tmp/'
+        ),
+        'EDITOR': (
+            env.get('WATDO_EDITOR') or
+            cfg.get('editor') or
+            env.get('EDITOR') or
+            bail_out('No editor could be determined. Make sure you\'ve got '
+                     'either $WATDO_EDITOR or $EDITOR set.')
+        ),
+        'SHOW_ALL_TASKS': args['show_all_tasks']
     }
 
-    cfg['SHOW_ALL_TASKS'] = args['show_all_tasks']
-
-    check_directory(cfg['PATH'])
-    check_directory(cfg['TMPPATH'])
-    launch_editor(cfg)
+    check_directory(new_cfg['PATH'])
+    check_directory(new_cfg['TMPPATH'])
+    launch_editor(new_cfg)
 
 def main():
-    _main(env=os.environ, args=vars(get_argument_parser().parse_args()))
+    _main(env=os.environ,
+          args=vars(get_argument_parser().parse_args()),
+          cfg=get_config_parser(os.environ))

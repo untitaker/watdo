@@ -29,12 +29,12 @@
     `/mnt/calendar`. Add `mount /mnt/calendar` to the autostart of your desktop
     and you won't have to bother about authentication any more.
 
-4.  Set the environment variable `$WATDO_PATH` to `/mnt/calendar`.
+5.  Run `watdo` from the command line. It will ask you a few questions. If it
+    asks you where your tasks are stored, say `/mnt/calendar`.
 
-5.  Run `watdo` from the command line.
-
-6.  `$EDITOR` should open. Edit the file as you wish. It's a markdown file that
-    maps calendars/task-lists to markdown headlines and tasks to list items.
+6.  Your favorite editor should open. Edit the file as you wish. It's a
+    markdown file that maps calendars/task-lists to markdown headlines and
+    tasks to list items.
 
     The first line contains the summary and some other metadata. It looks
     something like this:
@@ -63,17 +63,3 @@
 
 8.  Tasks with the status `COMPLETED` or `CANCELLED` are not shown by default.
     You can view these tasks with `watdo -a`.
-
-
-# All configuration possibilities
-
-*   `$WATDO_EDITOR` specifies the editor to use. It defaults to `$EDITOR`.
-
-*   `$WATDO_PATH` specifies the directory path to save the calendars to. It
-    defaults to `~/.watdo/tasks/`
-
-*   `$WATDO_TMPPATH` specifies the directory path to create needed temporary
-    files in. Because these files may contain sensitive data, this option does
-    not default to `/tmp`, because its permissions allow other system users to
-    delete the file and recreate it with different content. Instead, it
-    defaults to `~/.watdo/tmp/`.
