@@ -13,6 +13,7 @@
 
 import watdo.editor as editor
 import subprocess
+import tempfile
 import os
 import argparse
 
@@ -48,38 +49,39 @@ def confirm(message='Are you sure? (Y/n)'):
         return True
     return False
 
+def launch_editor(cfg, tmpfilesuffix='.markdown'):
+    tmpfile = tempfile.NamedTemporaryFile(dir=cfg['TMPPATH'],
+                                          suffix=tmpfilesuffix, delete=False)
 
-def launch_editor(cfg, tmpfilename='todo.markdown'):
-    tmpfilepath = os.path.join(cfg['TMPPATH'], tmpfilename)
-
-    with open(tmpfilepath, 'wb+') as f:
-        old_ids = editor.generate_tmpfile(f, cfg,
-            editor.walk_calendars(
-                cfg['PATH'],
-                all_events=cfg['SHOW_ALL_TASKS']
+    try:
+        with tmpfile as f:
+            old_ids = editor.generate_tmpfile(f, cfg,
+                editor.walk_calendars(
+                    cfg['PATH'],
+                    all_events=cfg['SHOW_ALL_TASKS']
+                )
             )
-        )
 
-    new_ids = None
-    while new_ids is None:
-        cmd = [cfg['EDITOR'], tmpfilepath]
-        print('>>> ' + ' '.join(cmd))
-        subprocess.call(cmd)
+        new_ids = None
+        while new_ids is None:
+            cmd = [cfg['EDITOR'], tmpfile.name]
+            print('>>> ' + ' '.join(cmd))
+            subprocess.call(cmd)
 
-        with open(tmpfilepath, 'rb') as f:
-            try:
-                new_ids = editor.parse_tmpfile(f)
-            except ValueError as e:
-                print(e)
-                print('Press enter to edit again...')
-                raw_input()
+            with open(tmpfile.name, 'rb') as f:
+                try:
+                    new_ids = editor.parse_tmpfile(f)
+                except ValueError as e:
+                    print(e)
+                    print('Press enter to edit again...')
+                    raw_input()
 
-    changes = confirm_changes(editor.get_changes(old_ids, new_ids, cfg))
-    for description, func in changes:
-        print(description)
-        func(cfg)
-
-    os.remove(tmpfilepath)
+        changes = confirm_changes(editor.get_changes(old_ids, new_ids, cfg))
+        for description, func in changes:
+            print(description)
+            func(cfg)
+    finally:
+        os.remove(tmpfile.name)
 
 
 def get_argument_parser():
