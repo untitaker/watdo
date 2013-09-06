@@ -14,7 +14,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='watdo',
-    version='0.1.0',
+    version='0.1.1',
     author='Markus Unterwaditzer',
     author_email='markus@unterwaditzer.net',
     url='https://github.com/untitaker/watdo',
