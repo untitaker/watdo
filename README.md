@@ -63,3 +63,22 @@
 
 8.  Tasks with the status `COMPLETED` or `CANCELLED` are not shown by default.
     You can view these tasks with `watdo -a`.
+
+# Bonus: Offline sync
+1.  Play around with watdo and look what it does to the files in
+    `/mnt/calendar`. Then take a look at
+    [Unison](http://www.cis.upenn.edu/~bcpierce/unison/). It is able to sync
+    two folders, like rsync. But unlike rsync, it doesn't ignore changes on one
+    side.
+
+2.  Edit `~/.watdo/config` and remove your custom path. Create the directory
+     `~/.watdo/tasks/` and copy everything from `/mnt/calendar/` over there.
+     Then run `unison -batch /mnt/calendar/ ~/.watdo/tasks/`. It won't do
+     anything, since both folders are up-to-date.
+
+3.  Use watdo to modify your tasks somehow. You probably will notice the
+    performance improvements.
+
+4.  Run `unison -batch /mnt/calendar/ ~/.watdo/tasks/` after your changes.
+
+5.  Set up some sort of cronjob that runs the unison command for you.
