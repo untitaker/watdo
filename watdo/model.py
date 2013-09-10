@@ -20,7 +20,7 @@ class EventWrapper(object):
     _vcal = _main = None
 
     def __init__(self, **kwargs):
-        for k, v in kwargs.items():  # meh
+        for k, v in kwargs.iteritems():  # meh
             setattr(self, k, v)
 
     @property

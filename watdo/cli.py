@@ -111,7 +111,7 @@ def create_config_file():
         'tmppath': input('Where should tmpfiles for editing be stored? '
                          '[default: ~/.watdo/tmp/]')
     }
-    for k, v in cfg.items():
+    for k, v in cfg.iteritems():
         if not v:
             continue
         yield k, v
