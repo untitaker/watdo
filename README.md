@@ -1,8 +1,10 @@
 # A task-manager for the command line.
 
-*   Watdo stores task lists as directories and tasks as `.ics` files in these
-    directories. Because CalDAV uses a similar storage structure, it is very
-    easy to access tasks of a remote CalDAV server using watdo and davfs.
+*   Watdo stores task lists as directories and tasks as
+    [iCalendar](https://en.wikipedia.org/wiki/ICalendar) files in these
+    directories. Because CalDAV basically uses the same storage structure, it
+    is very easy to access tasks of a remote CalDAV server using watdo and
+    davfs.
 
 *   Watdo will open a markdown-file containing your tasks in an editor of your
     choice. Any changes you make to that file will be mirrored to the described
