@@ -1,3 +1,12 @@
+# -*- coding: utf-8 -*-
+'''
+    watdo.tests.test_model
+    ~~~~~
+
+    :copyright: (c) 2013 Markus Unterwaditzer
+    :license: MIT, see LICENSE for more details.
+'''
+
 from watdo.tests import TestCase, TemporaryFile
 import watdo.model as model
 Task = model.Task

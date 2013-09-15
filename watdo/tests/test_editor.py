@@ -1,3 +1,12 @@
+# -*- coding: utf-8 -*-
+'''
+    watdo.tests.test_editor
+    ~~~~~
+
+    :copyright: (c) 2013 Markus Unterwaditzer
+    :license: MIT, see LICENSE for more details.
+'''
+
 from watdo.tests import TestCase, StringIO
 from watdo.model import Task, ParsingError
 import watdo.editor as editor
