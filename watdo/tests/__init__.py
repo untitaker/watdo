@@ -12,3 +12,18 @@
 
 from unittest import TestCase
 from StringIO import StringIO
+import tempfile
+import shutil
+
+
+class TemporaryFile(object):
+    '''primitive context manager for tempfiles, not comparable with Python 3's
+    version.'''
+    def __init__(self):
+        self.path = tempfile.mkdtemp()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args, **kwargs):
+        shutil.rmtree(self.path)
