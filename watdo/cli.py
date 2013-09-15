@@ -64,7 +64,7 @@ def launch_editor(cfg, tmpfilesuffix='.markdown'):
             old_ids = editor.generate_tmpfile(f, cfg,
                 editor.walk_calendars(
                     cfg['PATH'],
-                    all_events=cfg['SHOW_ALL_TASKS']
+                    all_tasks=cfg['SHOW_ALL_TASKS']
                 )
             )
 

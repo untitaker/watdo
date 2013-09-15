@@ -1,5 +1,5 @@
 from watdo.tests import TestCase, StringIO
-from watdo.model import EventWrapper, ParsingError
+from watdo.model import Task, ParsingError
 import watdo.editor as editor
 import datetime
 
@@ -8,8 +8,8 @@ class EditorTestCase(TestCase):
         f = StringIO()
         calendars = [
             ('test_cal', [
-                EventWrapper(summary=u'My cool task 1'),
-                EventWrapper(summary=u'My cool task 2')
+                Task(summary=u'My cool task 1'),
+                Task(summary=u'My cool task 2')
             ])
         ]
         old_ids = editor.generate_tmpfile(f, {'SHOW_ALL_TASKS': False},
@@ -56,8 +56,8 @@ class EditorTestCase(TestCase):
         ]:
 
             f = StringIO()
-            event = EventWrapper(summary=u'My cool task', due=due)
-            calendars = [('test_cal', [event])]
+            task = Task(summary=u'My cool task', due=due)
+            calendars = [('test_cal', [task])]
             old_ids = editor.generate_tmpfile(f, cfg, calendars)
             lines = f.getvalue().splitlines()
 
@@ -72,7 +72,7 @@ class EditorTestCase(TestCase):
             ])
             assert new_ids['test_cal'][1].due == new_due
 
-    def test_event_id_twice(self):
+    def test_task_id_twice(self):
         with self.assertRaisesRegexp(ParsingError, 'index already has been used'):
             editor.parse_tmpfile([
                 '# test_cal',
@@ -96,7 +96,7 @@ class EditorTestCase(TestCase):
     def test_descriptions(self):
         calendars = [
             ('test_cal', [
-                EventWrapper(
+                Task(
                     summary='Hello World',
                     description='This is a test\nIt has multiple linez\n'
                 )

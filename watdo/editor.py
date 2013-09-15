@@ -10,7 +10,7 @@
     :license: MIT, see LICENSE for more details.
 '''
 
-from .model import EventWrapper, ParsingError, walk_calendars
+from .model import Task, ParsingError, walk_calendars
 import datetime
 import os
 
@@ -52,30 +52,30 @@ def generate_tmpfile(f, cfg, calendars, description_indent=DESCRIPTION_INDENT):
     else:
         p(u'// Showing pending tasks (run `watdo -a` to show all)')
 
-    for calendar, events in sorted(calendars, key=lambda x: x[0]):
+    for calendar, tasks in sorted(calendars, key=lambda x: x[0]):
         # sort by name
         p(u'\n')
         p(u'# {}'.format(calendar))
         p(u'\n')
         # sort by deadline
-        events.sort(key=_by_deadline)
+        tasks.sort(key=_by_deadline)
         ids.setdefault(calendar, {})
 
-        for i, event in enumerate(events, start=1):
-            ids[calendar][i] = event
+        for i, task in enumerate(tasks, start=1):
+            ids[calendar][i] = task
             flags = []
-            if event.due is not None:
-                flags.append(_strftime(event.due))
-            if event.status:
-                flags.append(event.status)
+            if task.due is not None:
+                flags.append(_strftime(task.due))
+            if task.status:
+                flags.append(task.status)
 
             p(u'{}.  '.format(i))
-            p(event.summary)
+            p(task.summary)
             if flags:
                 p(FLAGS_PREFIX)
                 p(FLAGS_DELIMITER.join(flags))
             p(u'\n')
-            for l in event.description.splitlines():
+            for l in task.description.splitlines():
                 p(description_indent + l)
                 p(u'\n')
     return ids
@@ -84,7 +84,7 @@ def generate_tmpfile(f, cfg, calendars, description_indent=DESCRIPTION_INDENT):
 def parse_tmpfile(lines, description_indent=DESCRIPTION_INDENT):
     ids = {}
     calendar_name = None
-    event_id = None
+    task_id = None
     descriptions = {}
 
     for lineno, line in enumerate(lines, start=1):
@@ -92,35 +92,35 @@ def parse_tmpfile(lines, description_indent=DESCRIPTION_INDENT):
         if line.startswith(u'//'):
             pass
         elif line.startswith(description_indent) or not line:
-            if event_id:
+            if task_id:
                 if line:
                     line = line[len(description_indent):]
-                descriptions[calendar_name][event_id].append(line)
+                descriptions[calendar_name][task_id].append(line)
         elif line.startswith(u'# '):
             calendar_name = line[2:]
-            event_id = None
+            task_id = None
             ids[calendar_name] = {}
             descriptions[calendar_name] = {}
         elif calendar_name and line[0].isdigit():
-            event_id, event_summary = line.split(u'.  ', 1)
-            event_id = int(event_id)
-            if event_id in ids[calendar_name]:
+            task_id, task_summary = line.split(u'.  ', 1)
+            task_id = int(task_id)
+            if task_id in ids[calendar_name]:
                 raise ParsingError('Line {}: This list index already has been '
                                    'used for this calendar'.format(lineno))
 
-            ids[calendar_name][event_id] = event = EventWrapper()
-            event.summary, flags = _parse_flags(event_summary)
-            event.due = _extract_due_date(flags)
-            event.status = _extract_status(flags)
+            ids[calendar_name][task_id] = task = Task()
+            task.summary, flags = _parse_flags(task_summary)
+            task.due = _extract_due_date(flags)
+            task.status = _extract_status(flags)
             if flags:
                 raise ParsingError(u'Line {i}: Unknown flags: {t}'.format(i=lineno, t=flags))
-            descriptions[calendar_name][event_id] = []
+            descriptions[calendar_name][task_id] = []
         else:
             raise ParsingError('Line {}: Not decipherable'.format(lineno))
 
-    for calendar_name, events in descriptions.iteritems():
-        for event_id, description in events.iteritems():
-            ids[calendar_name][event_id].description = u'\n'.join(description)
+    for calendar_name, tasks in descriptions.iteritems():
+        for task_id, description in tasks.iteritems():
+            ids[calendar_name][task_id].description = u'\n'.join(description)
 
     return ids
 
@@ -174,67 +174,67 @@ def diff_calendars(ids_a, ids_b):
     for calendar_name in ids_a:
         calendar_a = ids_a[calendar_name]
         calendar_b = ids_b[calendar_name]
-        event_ids = set(calendar_a).union(calendar_b)
+        task_ids = set(calendar_a).union(calendar_b)
 
-        for event_id in event_ids:
-            if event_id not in calendar_a and event_id in calendar_b:
-                yield 'add', calendar_name, event_id
-            elif event_id in calendar_a and event_id not in calendar_b:
-                yield 'del', calendar_name, event_id
+        for task_id in task_ids:
+            if task_id not in calendar_a and task_id in calendar_b:
+                yield 'add', calendar_name, task_id
+            elif task_id in calendar_a and task_id not in calendar_b:
+                yield 'del', calendar_name, task_id
             else:
-                ev_a = calendar_a[event_id]
-                ev_b = calendar_b[event_id]
+                ev_a = calendar_a[task_id]
+                ev_b = calendar_b[task_id]
 
                 if ev_a != ev_b:
-                    yield 'mod', calendar_name, event_id
+                    yield 'mod', calendar_name, task_id
 
 def get_changes(old_ids, new_ids, cfg):
-    for method, calendar_name, event_id in diff_calendars(old_ids, new_ids):
+    for method, calendar_name, task_id in diff_calendars(old_ids, new_ids):
         if method == 'mod':
-            old_event = old_ids[calendar_name][event_id]
-            new_event = new_ids[calendar_name][event_id]
+            old_task = old_ids[calendar_name][task_id]
+            new_task = new_ids[calendar_name][task_id]
 
             description = u'Modify: '
-            if old_event.summary == new_event.summary:
-                description += new_event.summary
+            if old_task.summary == new_task.summary:
+                description += new_task.summary
             else:
-                description += u'{} => {}'.format(old_event.summary,
-                                                 new_event.summary)
+                description += u'{} => {}'.format(old_task.summary,
+                                                 new_task.summary)
 
-            yield description, change_modify_event(cfg, old_event, new_event)
+            yield description, _change_modify(old_task, new_task)
         elif method == 'add':
-            new_event = new_ids[calendar_name][event_id]
-            yield (u'Add: {}'.format(new_event.summary),
-                   change_add_event(cfg, new_event, calendar_name))
+            new_task = new_ids[calendar_name][task_id]
+            yield (u'Add: {}'.format(new_task.summary),
+                   _change_add(new_task, calendar_name))
         elif method == 'del':
-            old_event = old_ids[calendar_name][event_id]
-            yield (u'Delete: {}'.format(old_event.summary),
-                   change_delete_event(cfg, old_event))
+            old_task = old_ids[calendar_name][task_id]
+            yield (u'Delete: {}'.format(old_task.summary),
+                   _change_delete(old_task))
         else:
             # please don't happen
             raise ParsingError('Unknown method: {}'.format(method))
 
 
-def change_modify_event(cfg, old_event, new_event):
+def _change_modify(old_task, new_task):
     def inner(cfg):
-        old_event.update(new_event)
-        old_event.bump()
-        old_event.write()
+        old_task.update(new_task)
+        old_task.bump()
+        old_task.write()
     return inner
 
 
-def change_add_event(cfg, event, calendar_name):
+def _change_add(task, calendar_name):
     def inner(cfg):
-        fname = event.main['uid'].split('@')[0] + u'.ics'
+        fname = task.main['uid'].split('@')[0] + u'.ics'
         fpath = os.path.join(cfg['PATH'], calendar_name, fname)
-        event.filepath = fpath
-        with open(event.filepath, 'wb+') as f:
-            f.write(event.vcal.to_ical())
+        task.filepath = fpath
+        with open(task.filepath, 'wb+') as f:
+            f.write(task.vcal.to_ical())
 
     return inner
 
 
-def change_delete_event(cfg, event):
+def _change_delete(task):
     def inner(cfg):
-        os.remove(event.filepath)
+        os.remove(task.filepath)
     return inner

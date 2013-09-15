@@ -15,7 +15,7 @@ import icalendar.tools
 import os
 
 
-class EventWrapper(object):
+class Task(object):
     filepath = None  # the absolute filepath
     _vcal = _main = None
 
@@ -124,7 +124,7 @@ class EventWrapper(object):
         )
 
     def __repr__(self):
-        return 'EventWrapper({})'.format({
+        return 'watdo.model.Task({})'.format({
             'description': self.description,
             'summary': self.summary,
             'due': self.due,
@@ -148,7 +148,7 @@ class ParsingError(ValueError):
     pass
 
 
-def walk_calendar(dirpath, all_events):
+def walk_calendar(dirpath, all_tasks):
     for filename in os.listdir(dirpath):
         filepath = os.path.join(dirpath, filename)
         if not os.path.isfile(filepath):
@@ -157,19 +157,19 @@ def walk_calendar(dirpath, all_events):
         with open(filepath, 'rb') as f:
             vcal = f.read()
 
-        event = EventWrapper(vcal=vcal, filepath=filepath)
-        if event.main is not None and (not event.done or all_events):
-            yield event
+        task = Task(vcal=vcal, filepath=filepath)
+        if task.main is not None and (not task.done or all_tasks):
+            yield task
 
 
-def walk_calendars(path, all_events):
-    ''' walk_calendars(path) -> calendar_name, events
-    events = [(event), ...]'''
+def walk_calendars(path, all_tasks):
+    ''' walk_calendars(path) -> calendar_name, tasks
+    tasks = [(task), ...]'''
 
     for dirname in os.listdir(path):
         dirpath = os.path.join(path, dirname)
         if os.path.isfile(dirpath):
             continue
-        events = list(walk_calendar(dirpath, all_events))
-        if events:
-            yield dirname, events
+        tasks = list(walk_calendar(dirpath, all_tasks))
+        if tasks:
+            yield dirname, tasks
