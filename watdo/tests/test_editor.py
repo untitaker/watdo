@@ -12,8 +12,7 @@ class EditorTestCase(TestCase):
                 Task(summary=u'My cool task 2')
             ])
         ]
-        old_ids = editor.generate_tmpfile(f, {'SHOW_ALL_TASKS': False},
-                                          calendars)
+        old_ids = editor.generate_tmpfile(f, calendars)
 
         lines = f.getvalue().splitlines()
 
@@ -44,8 +43,6 @@ class EditorTestCase(TestCase):
         ])
 
     def test_date_and_time(self):
-        cfg = {'SHOW_ALL_TASKS': False}
-        
         for due, formatted_due, new_due, formatted_new_due in [
             (datetime.date(2013, 9 ,11), '2013/09/11',
              datetime.date(2013, 12, 17), '2013/12/17'),
@@ -58,7 +55,7 @@ class EditorTestCase(TestCase):
             f = StringIO()
             task = Task(summary=u'My cool task', due=due)
             calendars = [('test_cal', [task])]
-            old_ids = editor.generate_tmpfile(f, cfg, calendars)
+            old_ids = editor.generate_tmpfile(f, calendars, all_tasks=False)
             lines = f.getvalue().splitlines()
 
             assert lines[2] == '1.  My cool task -- ' + formatted_due
@@ -104,8 +101,7 @@ class EditorTestCase(TestCase):
         ]
 
         f = StringIO()
-        old_ids = editor.generate_tmpfile(f, {'SHOW_ALL_TASKS': False},
-                                          calendars)
+        old_ids = editor.generate_tmpfile(f, calendars)
 
         new_ids = editor.parse_tmpfile(f.getvalue().splitlines())
         assert old_ids == new_ids
