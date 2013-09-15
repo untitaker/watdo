@@ -22,8 +22,8 @@ import ConfigParser
 
 
 def bail_out(msg):
-        print(msg)
-        sys.exit(1)
+    print(msg)
+    sys.exit(1)
 
 
 def check_directory(path):
@@ -46,6 +46,7 @@ def confirm_changes(changes):
 
 
 def make_changes(changes, cfg):
+    changes = list(changes)
     if not changes:
         print('Nothing to do.')
     for description, func in changes:
@@ -54,9 +55,9 @@ def make_changes(changes, cfg):
 
 
 def path(p):
-        p = os.path.expanduser(p)
-        p = os.path.abspath(p)
-        return p
+    p = os.path.expanduser(p)
+    p = os.path.abspath(p)
+    return p
 
 
 def confirm(message='Are you sure? (Y/n)'):
@@ -104,10 +105,15 @@ def get_argument_parser():
                               'show all tasks and actually delete them.'))
     parser.add_argument('--new', '-n', dest='new_task', default=None,
                         help='Create a new task instead of opening the editor. '
-                        'Needs --cal defined.')
+                        'Needs --cal defined, and takes a summary through '
+                        'stdin.')
     parser.add_argument('--cal', '-c', dest='calendar_name', default=None,
                         help='A calendar name. Exact meaning depends on other '
                         'arguments.')
+    parser.add_argument('--noconfirm', dest='confirmation',
+                        action='store_const', const=False, default=None,
+                        help=('Disable any confirmations.'))
+
     return parser
 
 
@@ -141,31 +147,44 @@ def get_config_parser(env):
     return dict(parser.items('watdo'))
 
 
+def first(*a):
+    '''Used instead of the `or` operator if a *has* to be None in order to
+    evaluate to b, useful for cli flags where the values may be True, False or
+    None.
+
+    Otherwise just use `a or b`
+    '''
+    for x in a:
+        if x is not None:
+            return x
+
+
 def main():
     env = os.environ
     args = vars(get_argument_parser().parse_args())
     cfg = get_config_parser(os.environ)
     _main(env, args, cfg)
 
-def _main(env, args, cfg):
-    new_cfg = {
+def _main(env, args, file_cfg):
+    cfg = {
         'PATH': path(
             env.get('WATDO_PATH') or
-            cfg.get('path') or
+            file_cfg.get('path') or
             '~/.watdo/tasks/'
         ),
         'TMPPATH': path(
             env.get('WATDO_TMPPATH') or 
-            cfg.get('tmppath') or
+            file_cfg.get('tmppath') or
             '~/.watdo/tmp/'
         ),
         'EDITOR': (
             env.get('WATDO_EDITOR') or
-            cfg.get('editor') or
+            file_cfg.get('editor') or
             env.get('EDITOR') or
             bail_out('No editor could be determined. Make sure you\'ve got '
                      'either $WATDO_EDITOR or $EDITOR set.')
-        )
+        ),
+        'CONFIRMATION': first(args['confirmation'], True)
     }
 
     if args['new_task'] is not None:
@@ -175,13 +194,17 @@ def _main(env, args, cfg):
             bail_out('Missing summary.')
         if not calendar:
             bail_out('Missing calendar.')
+        if sys.stdin.isatty():
+            print('I see you haven\'t piped anything into watdo for the \n'
+                  'description. Type something and hit ^D if you\'re done.')
+        description = sys.stdin.read()
+        t = model.Task(summary=summary, description=description)
         print('Creating task: "{}" in {}'.format(summary, calendar))
-        t = model.Task(summary=summary)
-        t.write(create=True, cfg=new_cfg, calendar_name=calendar)
+        t.write(create=True, cfg=cfg, calendar_name=calendar)
 
     else:
         # watdo
-        # watdo -a
-        changes = launch_editor(new_cfg, all_tasks=args['show_all_tasks'])
-        changes = confirm_changes(changes)
-        make_changes(changes, new_cfg)
+        changes = launch_editor(cfg, all_tasks=args['show_all_tasks'])
+        if cfg['CONFIRMATION']:
+            changes = confirm_changes(changes)
+        make_changes(changes, cfg)
