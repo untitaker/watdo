@@ -10,7 +10,7 @@
     :license: MIT, see LICENSE for more details.
 '''
 
-from .model import Task, ParsingError, walk_calendars
+from .model import Task, ParsingError
 import datetime
 import os
 
@@ -40,14 +40,15 @@ def _by_deadline(x):
     return datetime.datetime(x.year, x.month, x.day)
 
 
-def generate_tmpfile(f, cfg, calendars, description_indent=DESCRIPTION_INDENT):
+def generate_tmpfile(f, calendars, description_indent=DESCRIPTION_INDENT,
+                     all_tasks=False):
     '''Given a file-like object ``f`` and a path, write todo file to ``f``,
     return a ``ids`` object'''
 
     ids = {}
     p = lambda x: f.write(x.encode('utf-8'))
 
-    if cfg['SHOW_ALL_TASKS']:
+    if all_tasks:
         p(u'// Showing all tasks')
     else:
         p(u'// Showing pending tasks (run `watdo -a` to show all)')
@@ -188,7 +189,7 @@ def diff_calendars(ids_a, ids_b):
                 if ev_a != ev_b:
                     yield 'mod', calendar_name, task_id
 
-def get_changes(old_ids, new_ids, cfg):
+def get_changes(old_ids, new_ids):
     for method, calendar_name, task_id in diff_calendars(old_ids, new_ids):
         if method == 'mod':
             old_task = old_ids[calendar_name][task_id]
@@ -225,11 +226,7 @@ def _change_modify(old_task, new_task):
 
 def _change_add(task, calendar_name):
     def inner(cfg):
-        fname = task.main['uid'].split('@')[0] + u'.ics'
-        fpath = os.path.join(cfg['PATH'], calendar_name, fname)
-        task.filepath = fpath
-        with open(task.filepath, 'wb+') as f:
-            f.write(task.vcal.to_ical())
+        task.write(create=True, cfg=cfg, calendar_name=calendar_name)
 
     return inner
 

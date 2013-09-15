@@ -50,9 +50,21 @@ class Task(object):
     def main(self, val):
         self._main = val
 
-    def write(self):
-        with open(self.filepath, 'wb') as f:
+    def write(self, create=False, cfg=None, calendar_name=None):
+        mode = 'wb' if not create else 'wb+'
+        if self.filepath is None:
+            if not cfg:
+                raise ValueError('Config can\'t be none when task should be '
+                                 'created')
+            if not create:
+                raise ValueError('Create arg must be true if filepath is None')
+            self.random_filename(cfg, calendar_name)
+        with open(self.filepath, mode) as f:
             f.write(self.vcal.to_ical())
+
+    def random_filename(self, cfg, calendar_name):
+        fname = self.main['uid'].split('@')[0] + u'.ics'
+        self.filepath = os.path.join(cfg['PATH'], calendar_name, fname)
 
     def update(self, other):
         self.due = other.due

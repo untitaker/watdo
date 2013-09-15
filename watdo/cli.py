@@ -12,12 +12,18 @@
 
 
 import watdo.editor as editor
+import watdo.model as model
 import subprocess
 import tempfile
 import os
 import sys
 import argparse
 import ConfigParser
+
+
+def bail_out(msg):
+        print(msg)
+        sys.exit(1)
 
 
 def check_directory(path):
@@ -27,9 +33,7 @@ def check_directory(path):
 
 def confirm_changes(changes):
     changes = list(changes)
-    if not changes:
-        print('No changes.')
-    else:
+    if changes:
         for i, (description, func) in enumerate(changes):
             print(u'{}.  {}'.format(i, description))
 
@@ -38,8 +42,15 @@ def confirm_changes(changes):
         reverted = raw_input('> ')
         for i in (int(x.strip()) for x in reverted.split()):
             del changes[i]
-
     return changes
+
+
+def make_changes(changes, cfg):
+    if not changes:
+        print('Nothing to do.')
+    for description, func in changes:
+        print(description)
+        func(cfg)
 
 
 def path(p):
@@ -55,18 +66,14 @@ def confirm(message='Are you sure? (Y/n)'):
     return False
 
 
-def launch_editor(cfg, tmpfilesuffix='.markdown'):
+def launch_editor(cfg, tmpfilesuffix='.markdown', all_tasks=False):
     tmpfile = tempfile.NamedTemporaryFile(dir=cfg['TMPPATH'],
                                           suffix=tmpfilesuffix, delete=False)
 
     try:
         with tmpfile as f:
-            old_ids = editor.generate_tmpfile(f, cfg,
-                editor.walk_calendars(
-                    cfg['PATH'],
-                    all_tasks=cfg['SHOW_ALL_TASKS']
-                )
-            )
+            calendars = model.walk_calendars(cfg['PATH'], all_tasks=all_tasks)
+            old_ids = editor.generate_tmpfile(f, calendars)
 
         new_ids = None
         while new_ids is None:
@@ -82,10 +89,7 @@ def launch_editor(cfg, tmpfilesuffix='.markdown'):
                     print('Press enter to edit again...')
                     raw_input()
 
-        changes = confirm_changes(editor.get_changes(old_ids, new_ids, cfg))
-        for description, func in changes:
-            print(description)
-            func(cfg)
+        return editor.get_changes(old_ids, new_ids)
     finally:
         os.remove(tmpfile.name)
 
@@ -98,6 +102,12 @@ def get_argument_parser():
                               'and marks them as done if they get deleted '
                               'from the tmpfile. This mode will make watdo '
                               'show all tasks and actually delete them.'))
+    parser.add_argument('--new', '-n', dest='new_task', default=None,
+                        help='Create a new task instead of opening the editor. '
+                        'Needs --cal defined.')
+    parser.add_argument('--cal', '-c', dest='calendar_name', default=None,
+                        help='A calendar name. Exact meaning depends on other '
+                        'arguments.')
     return parser
 
 
@@ -111,10 +121,7 @@ def create_config_file():
         'tmppath': input('Where should tmpfiles for editing be stored? '
                          '[default: ~/.watdo/tmp/]')
     }
-    for k, v in cfg.iteritems():
-        if not v:
-            continue
-        yield k, v
+    return ((k, v) for k, v in cfg.iteritems() if v)
 
 
 def get_config_parser(env):
@@ -134,12 +141,13 @@ def get_config_parser(env):
     return dict(parser.items('watdo'))
 
 
+def main():
+    env = os.environ
+    args = vars(get_argument_parser().parse_args())
+    cfg = get_config_parser(os.environ)
+    _main(env, args, cfg)
+
 def _main(env, args, cfg):
-    
-    def bail_out(msg):
-        print(msg)
-        sys.exit(1)
-        
     new_cfg = {
         'PATH': path(
             env.get('WATDO_PATH') or
@@ -157,15 +165,23 @@ def _main(env, args, cfg):
             env.get('EDITOR') or
             bail_out('No editor could be determined. Make sure you\'ve got '
                      'either $WATDO_EDITOR or $EDITOR set.')
-        ),
-        'SHOW_ALL_TASKS': args['show_all_tasks']
+        )
     }
 
-    check_directory(new_cfg['PATH'])
-    check_directory(new_cfg['TMPPATH'])
-    launch_editor(new_cfg)
+    if args['new_task'] is not None:
+        # watdo -n "my task" -c my_calendar
+        calendar, summary = args['calendar_name'], args['new_task']
+        if not summary:
+            bail_out('Missing summary.')
+        if not calendar:
+            bail_out('Missing calendar.')
+        print('Creating task: "{}" in {}'.format(summary, calendar))
+        t = model.Task(summary=summary)
+        t.write(create=True, cfg=new_cfg, calendar_name=calendar)
 
-def main():
-    _main(env=os.environ,
-          args=vars(get_argument_parser().parse_args()),
-          cfg=get_config_parser(os.environ))
+    else:
+        # watdo
+        # watdo -a
+        changes = launch_editor(new_cfg, all_tasks=args['show_all_tasks'])
+        changes = confirm_changes(changes)
+        make_changes(changes, new_cfg)
