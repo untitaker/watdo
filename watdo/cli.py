@@ -13,22 +13,13 @@
 
 import watdo.editor as editor
 import watdo.model as model
+from watdo.cli_utils import path, confirm, check_directory, bail_out, first
 import subprocess
 import tempfile
 import os
 import sys
 import argparse
 import ConfigParser
-
-
-def bail_out(msg):
-    print(msg)
-    sys.exit(1)
-
-
-def check_directory(path):
-    if not os.path.exists(path):
-        os.makedirs(path)
 
 
 def confirm_changes(changes):
@@ -52,19 +43,6 @@ def make_changes(changes, cfg):
     for description, func in changes:
         print(description)
         func(cfg)
-
-
-def path(p):
-    p = os.path.expanduser(p)
-    p = os.path.abspath(p)
-    return p
-
-
-def confirm(message='Are you sure? (Y/n)'):
-    inp = raw_input(message).lower().strip()
-    if not inp or inp == 'y':
-        return True
-    return False
 
 
 def launch_editor(cfg, tmpfilesuffix='.markdown', all_tasks=False):
@@ -147,23 +125,12 @@ def get_config_parser(env):
     return dict(parser.items('watdo'))
 
 
-def first(*a):
-    '''Used instead of the `or` operator if a *has* to be None in order to
-    evaluate to b, useful for cli flags where the values may be True, False or
-    None.
-
-    Otherwise just use `a or b`
-    '''
-    for x in a:
-        if x is not None:
-            return x
-
-
 def main():
     env = os.environ
     args = vars(get_argument_parser().parse_args())
     cfg = get_config_parser(os.environ)
     _main(env, args, cfg)
+
 
 def _main(env, args, file_cfg):
     cfg = {
