@@ -82,7 +82,7 @@ def get_argument_parser():
                               'from the tmpfile. This mode will make watdo '
                               'show all tasks and actually delete them.'))
     parser.add_argument('--new', '-n', dest='new_task', default=None,
-                        help='Create a new task instead of opening the editor. '
+                        help='Create new task instead of opening the editor. '
                         'Needs --cal defined, and takes a summary through '
                         'stdin.')
     parser.add_argument('--cal', '-c', dest='calendar_name', default=None,
@@ -140,7 +140,7 @@ def _main(env, args, file_cfg):
             '~/.watdo/tasks/'
         ),
         'TMPPATH': path(
-            env.get('WATDO_TMPPATH') or 
+            env.get('WATDO_TMPPATH') or
             file_cfg.get('tmppath') or
             '~/.watdo/tmp/'
         ),

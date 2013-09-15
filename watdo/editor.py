@@ -114,7 +114,8 @@ def parse_tmpfile(lines, description_indent=DESCRIPTION_INDENT):
             task.due = _extract_due_date(flags)
             task.status = _extract_status(flags)
             if flags:
-                raise ParsingError(u'Line {i}: Unknown flags: {t}'.format(i=lineno, t=flags))
+                raise ParsingError(u'Line {i}: Unknown flags: {t}'
+                                   .format(i=lineno, t=flags))
             descriptions[calendar_name][task_id] = []
         else:
             raise ParsingError('Line {}: Not decipherable'.format(lineno))
@@ -131,7 +132,8 @@ def _parse_flags(text):
     if len(res) < 2:
         return text, []
     summary, flags = res
-    return summary, filter(bool, (x.strip() for x in flags.split(FLAGS_DELIMITER)))
+    return summary, filter(bool, (x.strip()
+                                  for x in flags.split(FLAGS_DELIMITER)))
 
 
 def _extract_due_date(flags):
@@ -155,11 +157,12 @@ def _extract_due_date(flags):
         else:
             del flags[i]
             return rv
-            
+
 
 def _extract_status(flags):
     for i, flag in enumerate(flags):
-        if flag in (u'COMPLETED', u'IN-PROCESS', u'CANCELLED', u'NEEDS-ACTION'):
+        if flag in (u'COMPLETED', u'IN-PROCESS', u'CANCELLED',
+                    u'NEEDS-ACTION'):
             del flags[i]
             return flag
 
@@ -189,6 +192,7 @@ def diff_calendars(ids_a, ids_b):
                 if ev_a != ev_b:
                     yield 'mod', calendar_name, task_id
 
+
 def get_changes(old_ids, new_ids):
     for method, calendar_name, task_id in diff_calendars(old_ids, new_ids):
         if method == 'mod':
@@ -200,7 +204,7 @@ def get_changes(old_ids, new_ids):
                 description += new_task.summary
             else:
                 description += u'{} => {}'.format(old_task.summary,
-                                                 new_task.summary)
+                                                  new_task.summary)
 
             yield description, _change_modify(old_task, new_task)
         elif method == 'add':

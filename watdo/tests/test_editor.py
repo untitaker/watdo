@@ -3,6 +3,7 @@ from watdo.model import Task, ParsingError
 import watdo.editor as editor
 import datetime
 
+
 class EditorTestCase(TestCase):
     def test_basic(self):
         f = StringIO()
@@ -44,7 +45,7 @@ class EditorTestCase(TestCase):
 
     def test_date_and_time(self):
         for due, formatted_due, new_due, formatted_new_due in [
-            (datetime.date(2013, 9 ,11), '2013/09/11',
+            (datetime.date(2013, 9, 11), '2013/09/11',
              datetime.date(2013, 12, 17), '2013/12/17'),
             (datetime.time(13, 37), '13:37',
              datetime.time(14, 40), '14:40'),
@@ -70,7 +71,8 @@ class EditorTestCase(TestCase):
             assert new_ids['test_cal'][1].due == new_due
 
     def test_task_id_twice(self):
-        with self.assertRaisesRegexp(ParsingError, 'index already has been used'):
+        with self.assertRaisesRegexp(ParsingError,
+                                     'index already has been used'):
             editor.parse_tmpfile([
                 '# test_cal',
                 '1.  cool task 1',
