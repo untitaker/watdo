@@ -12,6 +12,7 @@
 
 from .model import Task, ParsingError
 import datetime
+import time
 import os
 
 DESCRIPTION_INDENT = u'    '
@@ -32,12 +33,20 @@ def _strftime(x):
     else:
         raise TypeError()
 
-
 def _by_deadline(x):
     x = x.due
-    if x is None or isinstance(x, datetime.time):
-        return datetime.datetime.now()
-    return datetime.datetime(x.year, x.month, x.day)
+    if isinstance(x, datetime.datetime):
+        return x
+    if isinstance(x, datetime.date):
+        return datetime.datetime(x.year, x.month, x.day)
+    dt = datetime.datetime.now()
+    if isinstance(x, datetime.time):
+        dt.hour = x.hour
+        dt.minute = x.minute
+        dt.second = x.second
+        return dt
+    else:
+        return dt
 
 
 def generate_tmpfile(f, calendars, description_indent=DESCRIPTION_INDENT,
