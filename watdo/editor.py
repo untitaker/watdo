@@ -88,6 +88,7 @@ def generate_tmpfile(f, calendars, description_indent=DESCRIPTION_INDENT,
             for l in task.description.splitlines():
                 p(description_indent + l)
                 p(u'\n')
+            p(u'\n')
     return ids
 
 
