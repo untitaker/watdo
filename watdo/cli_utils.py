@@ -35,15 +35,3 @@ def confirm(message='Are you sure? (Y/n)'):
     if not inp or inp == 'y':
         return True
     return False
-
-
-def first(*a):
-    '''Used instead of the `or` operator if a *has* to be None in order to
-    evaluate to b, useful for cli flags where the values may be True, False or
-    None.
-
-    Otherwise just use `a or b`
-    '''
-    for x in a:
-        if x is not None:
-            return x

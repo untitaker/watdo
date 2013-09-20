@@ -35,18 +35,16 @@ def _strftime(x):
 
 def _by_deadline(x):
     x = x.due
+    now = datetime.datetime.now()
     if isinstance(x, datetime.datetime):
         return x
-    if isinstance(x, datetime.date):
+    elif isinstance(x, datetime.date):
         return datetime.datetime(x.year, x.month, x.day)
-    dt = datetime.datetime.now()
-    if isinstance(x, datetime.time):
-        dt.hour = x.hour
-        dt.minute = x.minute
-        dt.second = x.second
-        return dt
+    elif isinstance(x, datetime.time):
+        return datetime.datetime(now.year, now.month, now.day,
+                                 x.hour, x.minute, x.second)
     else:
-        return dt
+        return now
 
 
 def generate_tmpfile(f, calendars, description_indent=DESCRIPTION_INDENT,
@@ -88,7 +86,8 @@ def generate_tmpfile(f, calendars, description_indent=DESCRIPTION_INDENT,
             for l in task.description.splitlines():
                 p(description_indent + l)
                 p(u'\n')
-            p(u'\n')
+            if task.description:
+                p(u'\n')
     return ids
 
 

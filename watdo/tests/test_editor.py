@@ -18,7 +18,7 @@ class EditorTestCase(TestCase):
         f = StringIO()
         calendars = [
             ('test_cal', [
-                Task(summary=u'My cool task 1'),
+                Task(summary=u'My cool task 1', description=u'lel'),
                 Task(summary=u'My cool task 2')
             ])
         ]
@@ -30,6 +30,8 @@ class EditorTestCase(TestCase):
         assert lines[1:] == [
             '# test_cal',
             '1.  My cool task 1',
+            '    lel',
+            '',
             '2.  My cool task 2'
         ]
 
@@ -41,7 +43,7 @@ class EditorTestCase(TestCase):
             ('mod', 'test_cal', 2)
         ])
 
-        del lines[-2]
+        del lines[2:-1]
         lines.append('')  # it has to take that
         lines.append('')
         new_ids = editor.parse_tmpfile(lines)

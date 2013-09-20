@@ -13,7 +13,7 @@
 
 import watdo.editor as editor
 import watdo.model as model
-from watdo.cli_utils import path, confirm, check_directory, bail_out, first
+from watdo.cli_utils import path, confirm, check_directory, bail_out
 import subprocess
 import tempfile
 import os
@@ -151,7 +151,8 @@ def _main(env, args, file_cfg):
             bail_out('No editor could be determined. Make sure you\'ve got '
                      'either $WATDO_EDITOR or $EDITOR set.')
         ),
-        'CONFIRMATION': first(args['confirmation'], True)
+        'CONFIRMATION': next((x for x in (args['confirmation'], True)
+                              if x is not None))
     }
 
     if args['new_task'] is not None:
