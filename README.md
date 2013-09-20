@@ -15,7 +15,7 @@
     access watdo's storage. This concept is inspired by the popular combination
     of mutt and offlineimap.
 
-*   Watdo is written in Python 2 and depends on the icalendar package on PyPI.
+*   The only Python version watdo is tested with is 2.7.
 
 
 # Full tutorial: watdo + davfs + owncloud
