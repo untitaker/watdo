@@ -28,10 +28,16 @@ def confirm_changes(changes):
         for i, (description, func) in enumerate(changes):
             print(u'{}.  {}'.format(i, description))
 
-        print('Enter changes you don\'t want to happen.')
-        print('By number, space separated.')
-        reverted = raw_input('> ')
-        for i in (int(x.strip()) for x in reverted.split()):
+        print('List the changes you don\'t want to happen.')
+        print('Just hit enter if changes are okay.')
+        reverted = None
+        while reverted is None:
+            try:
+                reverted = [int(x.strip()) for x in raw_input('> ').split()]
+            except ValueError:
+                print('Invalid input.')
+                print('If you want to undo number 1 and 2, enter: 1 2')
+        for i in reverted:
             del changes[i]
     return changes
 
