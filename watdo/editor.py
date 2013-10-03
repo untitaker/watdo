@@ -83,7 +83,7 @@ def generate_tmpfile(f, calendars, description_indent=DESCRIPTION_INDENT,
                 p(FLAGS_PREFIX)
                 p(FLAGS_DELIMITER.join(flags))
             p(u'\n')
-            for l in task.description.splitlines():
+            for l in task.description.rstrip().splitlines():
                 p(description_indent + l)
                 p(u'\n')
             if task.description:
@@ -131,7 +131,7 @@ def parse_tmpfile(lines, description_indent=DESCRIPTION_INDENT):
 
     for calendar_name, tasks in descriptions.iteritems():
         for task_id, description in tasks.iteritems():
-            ids[calendar_name][task_id].description = u'\n'.join(description)
+            ids[calendar_name][task_id].description = u'\n'.join(description).rstrip()
 
     return ids
 
