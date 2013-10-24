@@ -74,13 +74,16 @@
     side.
 
 2.  Edit `~/.watdo/config` and remove your custom path. Create the directory
-     `~/.watdo/tasks/` and copy everything from `/mnt/calendar/` over there.
-     Then run `unison -batch /mnt/calendar/ ~/.watdo/tasks/`. It won't do
-     anything, since both folders are up-to-date.
+    `~/.watdo/tasks/` and copy everything from `/mnt/calendar/` over there.
+    Then run `unison -perms 0 -dontchmod -batch /mnt/calendar/
+    ~/.watdo/tasks/`. It won't do anything, since both folders are up-to-date.
 
 3.  Use watdo to modify your tasks somehow. You probably will notice the
     performance improvements.
 
-4.  Run `unison -batch /mnt/calendar/ ~/.watdo/tasks/` after your changes.
+4.  Run the unison command again. It should syncronize your changes back to the
+    server.
 
-5.  Set up some sort of cronjob that runs the unison command for you.
+5.  Set up some sort of cronjob that runs the unison command for you. Note:
+    Unison might encounter merging conflicts, you should therefore figure out
+    some way to get notified if unison exits with a non-zero code.
