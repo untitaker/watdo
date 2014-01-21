@@ -16,12 +16,41 @@ import os
 
 
 class Task(object):
-    filepath = None  # the absolute filepath
-    _vcal = _main = None
+    #: the absolute path to the directory containing all calendars
+    basepath = None
+
+    #: the calendar name
+    calendar = None
+
+    #: the task's file name
+    filename = None
+
+    #: old locations of the task that should be removed on write
+    _old_filepaths = None
+
+    #: the vcal object from the icalendar module (exposed through self.vcal)
+    _vcal = None
+
+    #: the VTODO object inside self._vcal (exposed through self.main)
+    _main = None
 
     def __init__(self, **kwargs):
         for k, v in kwargs.iteritems():  # meh
             setattr(self, k, v)
+
+    @property
+    def filepath(self):
+        if None in (self.basepath, self.calendar, self.filename):
+            return None
+        return os.path.join(self.basepath, self.calendar, self.filename)
+
+    @filepath.setter
+    def filepath(self, new):
+        if self._old_filepaths is None:
+            self._old_filepaths = set()
+        if self.filepath is not None:
+            self._old_filepaths.add(self.filepath)
+        self.basepath, self.calendar, self.filename = new.rsplit('/', 2)
 
     @property
     def vcal(self):
@@ -50,27 +79,28 @@ class Task(object):
     def main(self, val):
         self._main = val
 
-    def write(self, create=False, cfg=None, calendar_name=None):
-        mode = 'wb' if not create else 'wb+'
-        if self.filepath is None:
-            if not cfg:
-                raise ValueError('Config can\'t be none when task should be '
-                                 'created')
+    def write(self, create=False):
+        mode = 'wb' if not create and not self._old_filepaths else 'wb+'
+        if self.filename is None:
             if not create:
-                raise ValueError('Create arg must be true if filepath is None')
-            self.random_filename(cfg, calendar_name)
+                raise ValueError('Create arg must be true if filename is None.')
+            self.random_filename()
+            if self.filepath is None:
+                raise ValueError('basepath and calendar must be set.')
         with open(self.filepath, mode) as f:
             f.write(self.vcal.to_ical())
+        while self._old_filepaths:
+            os.remove(self._old_filepaths.pop())
 
-    def random_filename(self, cfg, calendar_name):
-        fname = self.main['uid'].split('@')[0] + u'.ics'
-        self.filepath = os.path.join(cfg['PATH'], calendar_name, fname)
+    def random_filename(self):
+        self.filename = self.main['uid'].split('@')[0] + u'.ics'
 
     def update(self, other):
         self.due = other.due
         self.summary = other.summary
         self.description = other.description
         self.status = other.status
+        self.calendar = other.calendar
 
     def bump(self):
         self.main.pop('last-modified', None)
@@ -175,13 +205,9 @@ def walk_calendar(dirpath, all_tasks):
 
 
 def walk_calendars(path, all_tasks):
-    ''' walk_calendars(path) -> calendar_name, tasks
-    tasks = [(task), ...]'''
-
+    '''Yield name of and absolute path to each available calendar.'''
     for dirname in os.listdir(path):
         dirpath = os.path.join(path, dirname)
-        if os.path.isfile(dirpath):
-            continue
-        tasks = list(walk_calendar(dirpath, all_tasks))
-        if tasks:
-            yield dirname, tasks
+        if not os.path.isfile(dirpath):
+            for task in walk_calendar(dirpath, all_tasks):
+                yield task

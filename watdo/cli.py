@@ -57,8 +57,8 @@ def launch_editor(cfg, tmpfilesuffix='.markdown', all_tasks=False):
 
     try:
         with tmpfile as f:
-            calendars = model.walk_calendars(cfg['PATH'], all_tasks=all_tasks)
-            old_ids = editor.generate_tmpfile(f, calendars)
+            tasks = model.walk_calendars(cfg['PATH'], all_tasks)
+            old_ids = editor.generate_tmpfile(f, tasks, all_tasks=all_tasks)
 
         new_ids = None
         while new_ids is None:

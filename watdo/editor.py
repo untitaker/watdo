@@ -12,15 +12,12 @@
 
 from .model import Task, ParsingError
 import datetime
-import time
 import os
 
 DESCRIPTION_INDENT = u'    '
-FLAGS_PREFIX = u' -- '
-FLAGS_DELIMITER = u'; '
 DATE_FORMAT = '%Y/%m/%d'
 TIME_FORMAT = '%H:%M'
-DATETIME_FORMAT = DATE_FORMAT + ' ' + TIME_FORMAT
+DATETIME_FORMAT = DATE_FORMAT + '-' + TIME_FORMAT
 
 
 def _strftime(x):
@@ -32,6 +29,7 @@ def _strftime(x):
         return x.strftime(TIME_FORMAT)
     else:
         raise TypeError()
+
 
 def _by_deadline(x):
     x = x.due
@@ -47,7 +45,7 @@ def _by_deadline(x):
         return now
 
 
-def generate_tmpfile(f, calendars, description_indent=DESCRIPTION_INDENT,
+def generate_tmpfile(f, tasks, description_indent=DESCRIPTION_INDENT,
                      all_tasks=False):
     '''Given a file-like object ``f`` and a path, write todo file to ``f``,
     return a ``ids`` object'''
@@ -59,154 +57,149 @@ def generate_tmpfile(f, calendars, description_indent=DESCRIPTION_INDENT,
         p(u'// Showing all tasks')
     else:
         p(u'// Showing pending tasks (run `watdo -a` to show all)')
+    p(u'\n')
 
-    for calendar, tasks in sorted(calendars, key=lambda x: x[0]):
-        # sort by name
-        p(u'\n')
-        p(u'# {}'.format(calendar))
-        p(u'\n')
-        # sort by deadline
-        tasks.sort(key=_by_deadline)
-        ids.setdefault(calendar, {})
+    # sort by deadline
+    for i, task in enumerate(sorted(tasks, key=_by_deadline), start=1):
+        ids[i] = task
 
-        for i, task in enumerate(tasks, start=1):
-            ids[calendar][i] = task
-            flags = []
-            if task.due is not None:
-                flags.append(_strftime(task.due))
-            if task.status:
-                flags.append(task.status)
+        # summary
+        p(task.summary)
 
-            p(u'{}.  '.format(i))
-            p(task.summary)
-            if flags:
-                p(FLAGS_PREFIX)
-                p(FLAGS_DELIMITER.join(flags))
+        # due
+        if task.status:
+            p(u' status:{}'.format(task.status))
+        if task.due is not None:
+            p(u' due:{}'.format(_strftime(task.due)))
+
+        # calendar
+        p(u' @{}'.format(task.calendar))
+        p(u' id:{}\n'.format(i))
+
+        # description
+        for l in task.description.rstrip().splitlines():
+            p(description_indent + l)
             p(u'\n')
-            for l in task.description.rstrip().splitlines():
-                p(description_indent + l)
-                p(u'\n')
-            if task.description:
-                p(u'\n')
     return ids
 
 
 def parse_tmpfile(lines, description_indent=DESCRIPTION_INDENT):
     ids = {}
-    calendar_name = None
     task_id = None
     descriptions = {}
 
     for lineno, line in enumerate(lines, start=1):
-        line = line.decode('utf-8').rstrip(u'\n')
-        if line.startswith(u'//'):
-            pass
-        elif line.startswith(description_indent) or not line:
-            if task_id:
-                if line:
-                    line = line[len(description_indent):]
-                descriptions[calendar_name][task_id].append(line)
-        elif line.startswith(u'# '):
-            calendar_name = line[2:]
-            task_id = None
-            ids[calendar_name] = {}
-            descriptions[calendar_name] = {}
-        elif calendar_name and line[0].isdigit():
-            task_id, task_summary = line.split(u'.  ', 1)
-            task_id = int(task_id)
-            if task_id in ids[calendar_name]:
-                raise ParsingError('Line {}: This list index already has been '
-                                   'used for this calendar'.format(lineno))
+        try:
+            line = line.decode('utf-8').rstrip(u'\n')
+            if line.startswith(u'//'):
+                pass
+            elif line.startswith(description_indent) or not line:
+                if task_id:
+                    if line:
+                        line = line[len(description_indent):]
+                    descriptions[task_id].append(line)
+            else:
+                task_summary = line
+                flags = task_summary.split()
+                # ids don't need to be numeric, yay ducktyping!
+                task_id = _extract_id(flags) or line
+                if task_id in ids:
+                    raise ParsingError('This list index already has been '
+                                       'used for this calendar'.format(lineno))
 
-            ids[calendar_name][task_id] = task = Task()
-            task.summary, flags = _parse_flags(task_summary)
-            task.due = _extract_due_date(flags)
-            task.status = _extract_status(flags)
-            if flags:
-                raise ParsingError(u'Line {i}: Unknown flags: {t}'
-                                   .format(i=lineno, t=flags))
-            descriptions[calendar_name][task_id] = []
-        else:
-            raise ParsingError('Line {}: Not decipherable'.format(lineno))
+                ids[task_id] = task = Task()
+                task.due = _extract_due_date(flags)
+                task.status = _extract_status(flags)
+                task.calendar = _extract_calendar(flags)
+                task.summary = u' '.join(flags)
+                descriptions[task_id] = []
+        except ParsingError as e:
+            raise ParsingError('Line {}: {}'.format(lineno, str(e)))
 
-    for calendar_name, tasks in descriptions.iteritems():
-        for task_id, description in tasks.iteritems():
-            ids[calendar_name][task_id].description = u'\n'.join(description).rstrip()
+    for task_id, description in descriptions.iteritems():
+        ids[task_id].description = u'\n'.join(description).rstrip()
 
     return ids
 
 
-def _parse_flags(text):
-    res = text.rsplit(FLAGS_PREFIX, 1)
-    if len(res) < 2:
-        return text, []
-    summary, flags = res
-    return summary, filter(bool, (x.strip()
-                                  for x in flags.split(FLAGS_DELIMITER)))
-
-
 def _extract_due_date(flags):
-    '''Allowed values for due:
-        YYYY/MM/DD
-        YYYY/MM/DD HH:mm
-        HH:mm
+    '''Allowed values:
+        due:YYYY/MM/DD
+        due:YYYY/MM/DD-HH:mm
+        due:HH:mm
     '''
     for i, flag in enumerate(flags):
-        try:
-            if u' ' in flag:
-                rv = datetime.datetime.strptime(flag, DATETIME_FORMAT)
-            elif u'/' in flag:
-                rv = datetime.datetime.strptime(flag, DATE_FORMAT).date()
-            elif u':' in flag:
-                rv = datetime.datetime.strptime(flag, TIME_FORMAT).time()
+        if flag.startswith('due:'):
+            flag = flag[4:]
+            try:
+                if u'-' in flag:
+                    rv = datetime.datetime.strptime(flag, DATETIME_FORMAT)
+                elif u'/' in flag:
+                    rv = datetime.datetime.strptime(flag, DATE_FORMAT).date()
+                elif u':' in flag:
+                    rv = datetime.datetime.strptime(flag, TIME_FORMAT).time()
+                else:
+                    raise ValueError()
+            except ValueError:
+                pass
             else:
-                raise ValueError()
-        except ValueError:
-            pass
-        else:
-            del flags[i]
-            return rv
+                del flags[i]
+                return rv
 
 
 def _extract_status(flags):
     for i, flag in enumerate(flags):
-        if flag in (u'COMPLETED', u'IN-PROCESS', u'CANCELLED',
-                    u'NEEDS-ACTION'):
+        if flag.startswith(u'status:'):
+            flag = flag[7:]
+            if flag not in (u'COMPLETED', u'IN-PROCESS', u'CANCELLED',
+                        u'NEEDS-ACTION'):
+                raise ParsingError('Invalid status.')
             del flags[i]
             return flag
-
     return u''
+
+
+def _extract_calendar(flags):
+    for i, flag in enumerate(flags):
+        if flag.startswith(u'@'):
+            del flags[i]
+            return flag[1:]
+    raise ParsingError('All tasks must have a calendar set.')
+
+
+def _extract_id(flags):
+    for i, flag in enumerate(flags):
+        if flag.startswith(u'id:'):
+            del flags[i]
+            return int(flag[3:])
 
 
 def diff_calendars(ids_a, ids_b):
     '''Get difference between two ``ids`` objects'''
-    if set(ids_a) != set(ids_b):
+    if set(x.calendar for x in ids_a.values()) != \
+            set(x.calendar for x in ids_b.values()):
         raise ParsingError('Adding, renaming and deleting calendars is not '
                            'supported.', set(ids_a), set(ids_b))
 
-    for calendar_name in ids_a:
-        calendar_a = ids_a[calendar_name]
-        calendar_b = ids_b[calendar_name]
-        task_ids = set(calendar_a).union(calendar_b)
+    task_ids = set(ids_a).union(ids_b)
+    for task_id in task_ids:
+        if task_id not in ids_a and task_id in ids_b:
+            yield 'add', task_id
+        elif task_id in ids_a and task_id not in ids_b:
+            yield 'del', task_id
+        else:
+            ev_a = ids_a[task_id]
+            ev_b = ids_b[task_id]
 
-        for task_id in task_ids:
-            if task_id not in calendar_a and task_id in calendar_b:
-                yield 'add', calendar_name, task_id
-            elif task_id in calendar_a and task_id not in calendar_b:
-                yield 'del', calendar_name, task_id
-            else:
-                ev_a = calendar_a[task_id]
-                ev_b = calendar_b[task_id]
-
-                if ev_a != ev_b:
-                    yield 'mod', calendar_name, task_id
+            if ev_a != ev_b:
+                yield 'mod', task_id
 
 
 def get_changes(old_ids, new_ids):
-    for method, calendar_name, task_id in diff_calendars(old_ids, new_ids):
+    for method, task_id in diff_calendars(old_ids, new_ids):
         if method == 'mod':
-            old_task = old_ids[calendar_name][task_id]
-            new_task = new_ids[calendar_name][task_id]
+            old_task = old_ids[task_id]
+            new_task = new_ids[task_id]
 
             description = u'Modify: '
             if old_task.summary == new_task.summary:
@@ -217,11 +210,11 @@ def get_changes(old_ids, new_ids):
 
             yield description, _change_modify(old_task, new_task)
         elif method == 'add':
-            new_task = new_ids[calendar_name][task_id]
+            new_task = new_ids[task_id]
             yield (u'Add: {}'.format(new_task.summary),
-                   _change_add(new_task, calendar_name))
+                   _change_add(new_task))
         elif method == 'del':
-            old_task = old_ids[calendar_name][task_id]
+            old_task = old_ids[task_id]
             yield (u'Delete: {}'.format(old_task.summary),
                    _change_delete(old_task))
         else:
@@ -237,9 +230,10 @@ def _change_modify(old_task, new_task):
     return inner
 
 
-def _change_add(task, calendar_name):
+def _change_add(task):
     def inner(cfg):
-        task.write(create=True, cfg=cfg, calendar_name=calendar_name)
+        task.basepath = cfg['PATH']
+        task.write(create=True)
 
     return inner
 

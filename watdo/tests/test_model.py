@@ -15,16 +15,17 @@ import os
 
 class TaskTestCase(TestCase):
     def test_writing(self):
-        t = Task(
-            summary='My little task',
-            description=('This is my task\n'
-                         'My task is amazing\n\n'
-                         'it is t3h r0xx0rz')
-        )
         with TemporaryFile() as tmp:
+            t = Task(
+                summary='My little task',
+                description=('This is my task\n'
+                             'My task is amazing\n\n'
+                             'it is t3h r0xx0rz'),
+                calendar='foo_cal',
+                basepath=tmp.path
+            )
             os.mkdir(os.path.join(tmp.path, 'foo_cal'))
-            t.write(create=True, cfg={'PATH': tmp.path},
-                    calendar_name='foo_cal')
+            t.write(create=True)
             assert t.filepath.startswith(os.path.join(tmp.path, 'foo_cal'))
             with open(t.filepath) as f:
                 lines = set(map(str.strip, f))
@@ -52,29 +53,33 @@ class TaskTestCase(TestCase):
         assert a.main['last-modified'].dt > old_date.dt
 
 
-def FileSystemTestCase(TestCase):
+class FileSystemTestCase(TestCase):
     def test_walk_calendar(self):
-        tasks = lambda *l: [Task(summary=x) for x in l]
-        calendars = [
-            ('cal1', tasks('task1.1', 'task1.2', 'task1.3')),
-            ('cal2', tasks('task2.1', 'task2.2', 'task2.3')),
-            ('cal3', tasks('task3.1', 'task3.2', 'task3.3'))
+        tasks = [
+            Task(summary='task1.1', calendar='cal1'),
+            Task(summary='task1.2', calendar='cal1'),
+            Task(summary='task1.3', calendar='cal1'),
+            Task(summary='task2.1', calendar='cal2'),
+            Task(summary='task2.2', calendar='cal2'),
+            Task(summary='task2.3', calendar='cal2'),
+            Task(summary='task3.1', calendar='cal3'),
+            Task(summary='task3.2', calendar='cal3', status='COMPLETED'),
+            Task(summary='task3.3', calendar='cal3')
         ]
-        # task 3.2
-        calendars[-1][1][1].status = 'COMPLETED'
 
         with TemporaryFile() as tmp:
-            for name, tasks in calendars:
-                os.mkdir(os.path.join(tmp.path, name))
-                for task in tasks:
-                    task.write(create=True, cfg={'PATH': tmp.path},
-                               calendar_name=name)
+            for task in tasks:
+                dirpath = os.path.join(tmp.path, task.calendar)
+                if not os.path.isdir(dirpath):
+                    os.mkdir(dirpath)
+                task.basepath = tmp.path
+                task.write(create=True)
 
-            rv = [(name, list(tasks)) for name, tasks in
-                  model.walk_calendars(tmp.path, all_tasks=True)]
-            assert calendars == rv
+            rv = sorted(model.walk_calendars(tmp.path, all_tasks=True),
+                        key=lambda x: x.summary)
+            assert tasks == rv
 
-            rv = [(name, list(tasks)) for name, tasks in
-                  model.walk_calendars(tmp.path, all_tasks=False)]
-            del calendars[-1][1][1]
-            assert calendars == rv
+            rv = sorted(model.walk_calendars(tmp.path, all_tasks=False),
+                        key=lambda x: x.summary)
+            del tasks[-2]
+            assert tasks == rv
