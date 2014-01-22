@@ -24,7 +24,6 @@ class EditorTestCase(TestCase):
 
         lines = f.getvalue().splitlines()
 
-        assert lines[0].startswith('// Showing pending tasks')
         assert lines[1:] == [
             'My cool task 1 @test_cal id:1',
             '    lel',
@@ -62,7 +61,7 @@ class EditorTestCase(TestCase):
             f = StringIO()
             task = Task(summary=u'My cool task', due=due, calendar='test_cal')
             tasks = [task]
-            old_ids = editor.generate_tmpfile(f, tasks, all_tasks=False)
+            old_ids = editor.generate_tmpfile(f, tasks)
             lines = f.getvalue().splitlines()
 
             assert lines[1] == 'My cool task due:{} @test_cal id:1'.format(formatted_due)

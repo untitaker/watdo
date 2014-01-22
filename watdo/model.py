@@ -190,7 +190,7 @@ class ParsingError(ValueError):
     pass
 
 
-def walk_calendar(dirpath, all_tasks):
+def walk_calendar(dirpath):
     for filename in os.listdir(dirpath):
         filepath = os.path.join(dirpath, filename)
         if not os.path.isfile(filepath):
@@ -200,14 +200,14 @@ def walk_calendar(dirpath, all_tasks):
             vcal = f.read()
 
         task = Task(vcal=vcal, filepath=filepath)
-        if task.main is not None and (not task.done or all_tasks):
+        if task.main is not None:
             yield task
 
 
-def walk_calendars(path, all_tasks):
+def walk_calendars(path):
     '''Yield name of and absolute path to each available calendar.'''
     for dirname in os.listdir(path):
         dirpath = os.path.join(path, dirname)
         if not os.path.isfile(dirpath):
-            for task in walk_calendar(dirpath, all_tasks):
+            for task in walk_calendar(dirpath):
                 yield task

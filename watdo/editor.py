@@ -45,18 +45,13 @@ def _by_deadline(x):
         return now
 
 
-def generate_tmpfile(f, tasks, description_indent=DESCRIPTION_INDENT,
-                     all_tasks=False):
+def generate_tmpfile(f, tasks, header=u'// watdo', description_indent=DESCRIPTION_INDENT):
     '''Given a file-like object ``f`` and a path, write todo file to ``f``,
     return a ``ids`` object'''
 
     ids = {}
     p = lambda x: f.write(x.encode('utf-8'))
-
-    if all_tasks:
-        p(u'// Showing all tasks')
-    else:
-        p(u'// Showing pending tasks (run `watdo -a` to show all)')
+    p(header)
     p(u'\n')
 
     # sort by deadline

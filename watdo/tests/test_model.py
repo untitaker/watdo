@@ -75,11 +75,6 @@ class FileSystemTestCase(TestCase):
                 task.basepath = tmp.path
                 task.write(create=True)
 
-            rv = sorted(model.walk_calendars(tmp.path, all_tasks=True),
+            rv = sorted(model.walk_calendars(tmp.path),
                         key=lambda x: x.summary)
-            assert tasks == rv
-
-            rv = sorted(model.walk_calendars(tmp.path, all_tasks=False),
-                        key=lambda x: x.summary)
-            del tasks[-2]
             assert tasks == rv
