@@ -62,9 +62,9 @@ def launch_editor(cfg, tmpfilesuffix='.markdown', all_tasks=False):
 
         new_ids = None
         while new_ids is None:
-            cmd = [cfg['EDITOR'], tmpfile.name]
-            print('>>> ' + ' '.join(cmd))
-            subprocess.call(cmd)
+            cmd = cfg['EDITOR'] + ' ' + tmpfile.name
+            print('>>> {}'.format(cmd))
+            subprocess.call(cmd, shell=True)
 
             with open(tmpfile.name, 'rb') as f:
                 try:
