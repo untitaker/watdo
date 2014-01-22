@@ -64,11 +64,11 @@ def generate_tmpfile(f, tasks, description_indent=DESCRIPTION_INDENT,
         ids[i] = task
 
         # summary
+        if task.status:
+            p(u'{} '.format(_status_to_alias[unicode(task.status)]))
         p(task.summary)
 
         # due
-        if task.status:
-            p(u' status:{}'.format(task.status))
         if task.due is not None:
             p(u' due:{}'.format(_strftime(task.due)))
 
@@ -101,17 +101,18 @@ def parse_tmpfile(lines, description_indent=DESCRIPTION_INDENT):
             else:
                 task_summary = line
                 flags = task_summary.split()
+
+                task = Task()
+                task.status = _extract_status(flags)
+                task.due = _extract_due_date(flags)
+                task.calendar = _extract_calendar(flags)
                 # ids don't need to be numeric, yay ducktyping!
                 task_id = _extract_id(flags) or line
+                task.summary = u' '.join(flags)
                 if task_id in ids:
                     raise ParsingError('This list index already has been '
-                                       'used for this calendar'.format(lineno))
-
-                ids[task_id] = task = Task()
-                task.due = _extract_due_date(flags)
-                task.status = _extract_status(flags)
-                task.calendar = _extract_calendar(flags)
-                task.summary = u' '.join(flags)
+                                       'used for this calendar')
+                ids[task_id] = task
                 descriptions[task_id] = []
         except ParsingError as e:
             raise ParsingError('Line {}: {}'.format(lineno, str(e)))
@@ -146,17 +147,31 @@ def _extract_due_date(flags):
                 del flags[i]
                 return rv
 
+def _compile_status_table():
+    statuses = [
+        (u'COMPLETED', u'x'),
+        (u'IN-PROCESS', None),
+        (u'CANCELLED', None),
+        (u'NEEDS-ACTION', None)
+    ]
+    status_to_alias = {}
+    alias_to_status = {}
+    for full_name, alias in statuses:
+        alias_to_status[full_name] = full_name
+        status_to_alias[full_name] = full_name
+        if alias is not None:
+            status_to_alias[full_name] = alias
+            alias_to_status[alias] = full_name
+    return status_to_alias, alias_to_status
+
+_status_to_alias, _alias_to_status = _compile_status_table()
+del _compile_status_table
 
 def _extract_status(flags):
-    for i, flag in enumerate(flags):
-        if flag.startswith(u'status:'):
-            flag = flag[7:]
-            if flag not in (u'COMPLETED', u'IN-PROCESS', u'CANCELLED',
-                        u'NEEDS-ACTION'):
-                raise ParsingError('Invalid status.')
-            del flags[i]
-            return flag
-    return u''
+    x = _alias_to_status.get(flags[0], u'')
+    if x:
+        del flags[0]
+    return x
 
 
 def _extract_calendar(flags):

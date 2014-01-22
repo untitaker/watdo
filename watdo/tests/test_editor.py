@@ -85,13 +85,6 @@ class EditorTestCase(TestCase):
                 'cool task 3 @test_cal id:1'
             ])
 
-    def test_unknown_flags(self):
-        with self.assertRaisesRegexp(ParsingError, 'Invalid status'):
-            editor.parse_tmpfile([
-                'cool task 1 @test_cal status:COMPLETED',
-                'cool task 2 @test_cal status:HEYHOO'
-            ])
-
     def test_missing_calendar(self):
         with self.assertRaises(ParsingError):
             editor.parse_tmpfile(['ASDASDASDASDAD'])

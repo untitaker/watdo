@@ -41,7 +41,7 @@
     The first line of a task contains the summary and some other metadata. It
     looks something like this:
 
-        My task description due:2014/09/09 @computers id:1 status:IN-PROCESS
+        My task description due:2014/09/09 @computers id:1
 
     The date format for the `due` flag can be either YYYY/mm/dd,
     YYYY/mm/dd-HH:MM or HH:MM.
@@ -49,13 +49,19 @@
     The `@computers` indicates the task is saved in the calendar/task-list
     called "computers".
 
-    The `status` flag can contain any value specified in [the iCalendar
-    standard](http://www.kanzaki.com/docs/ical/status.html). Tasks with
-    `status:CANCELLED` or `status:COMPLETED` will get hidden from the list.
-    Use `watdo -a` to show them too.
-
     After this first line, optional lines indented with four spaces form the
     description field of the task.
+
+    You can mark this task as done by placing a `x` in front of it:
+
+        x My task description due:2014/09/09 @computers id:1
+
+    Or write `COMPLETED` instead of the `x`:
+
+        COMPLETED My task description due:2014/09/09 @computers id:1
+
+    Or really any valid value for the `STATUS` property in the [the iCalendar
+    standard](http://www.kanzaki.com/docs/ical/status.html).
 
     If you get the syntax of your file wrong, watdo *should* allow you to edit
     it again after showing an error. It's still in alpha though.
