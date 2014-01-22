@@ -34,22 +34,28 @@
 5.  Run `watdo` from the command line. It will ask you a few questions. If it
     asks you where your tasks are stored, say `/mnt/calendar`.
 
-6.  Your favorite editor should open. Edit the file as you wish. It's a
-    markdown file that maps calendars/task-lists to markdown headlines and
-    tasks to list items.
+6.  Your favorite editor should open. Edit the file as you wish. It's a file
+    whose format kind-of resembles
+    [todo.txt](https://github.com/ginatrapani/todo.txt-cli/wiki/The-Todo.txt-Format).
 
-    The first line contains the summary and some other metadata. It looks
-    something like this:
+    The first line of a task contains the summary and some other metadata. It
+    looks something like this:
 
-        SUMMARY[ -- FLAGS]
+        My task description due:2014/09/09 @computers id:1 status:IN-PROCESS
 
-    The flags part is a semicolon (`;`) separated list of the following
-    properties, all of them optional:
+    The date format for the `due` flag can be either YYYY/mm/dd,
+    YYYY/mm/dd-HH:MM or HH:MM.
 
-    Date -- (`YYYY/mm/dd`), time (`HH:MM`) xor datetime (`YYYY/mm/dd HH:MM`).
+    The `@computers` indicates the task is saved in the calendar/task-list
+    called "computers".
 
-    Status -- one of the values specified in
-    [the iCalendar standard](http://www.kanzaki.com/docs/ical/status.html).
+    The `status` flag can contain any value specified in [the iCalendar
+    standard](http://www.kanzaki.com/docs/ical/status.html). Tasks with
+    `status:CANCELLED` or `status:COMPLETED` will get hidden from the list.
+    Use `watdo -a` to show them too.
+
+    After this first line, optional lines indented with four spaces form the
+    description field of the task.
 
     If you get the syntax of your file wrong, watdo *should* allow you to edit
     it again after showing an error. It's still in alpha though.
