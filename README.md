@@ -61,7 +61,8 @@
         COMPLETED My task description due:2014/09/09 @computers id:1
 
     Or really any valid value for the `STATUS` property in the [the iCalendar
-    standard](http://www.kanzaki.com/docs/ical/status.html).
+    standard](http://www.kanzaki.com/docs/ical/status.html). There is also `.`
+    as a shortcut for `IN-PROCESS` and `!` for `NEEDS-ACTION`.
 
     If you get the syntax of your file wrong, watdo *should* allow you to edit
     it again after showing an error. It's still in alpha though.

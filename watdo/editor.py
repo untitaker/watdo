@@ -145,9 +145,9 @@ def _extract_due_date(flags):
 def _compile_status_table():
     statuses = [
         (u'COMPLETED', u'x'),
-        (u'IN-PROCESS', None),
+        (u'IN-PROCESS', u'.'),
         (u'CANCELLED', None),
-        (u'NEEDS-ACTION', None)
+        (u'NEEDS-ACTION', u'!')
     ]
     status_to_alias = {}
     alias_to_status = {}
