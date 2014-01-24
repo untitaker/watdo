@@ -134,6 +134,19 @@ class Task(object):
         return self.status in (u'COMPLETED', u'CANCELLED')
 
     @property
+    def done_date(self):
+        dt = self.main.get('completed', None)
+        if dt is None:
+            return None
+        return dt.dt
+
+    @done_date.setter
+    def done_date(self, dt):
+        self.main.pop('completed', None)
+        if dt is not None:
+            self.main.add('completed', dt)
+
+    @property
     def description(self):
         return self.main.get('description', u'')
 

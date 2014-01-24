@@ -61,6 +61,8 @@ def generate_tmpfile(f, tasks, header=u'// watdo', description_indent=DESCRIPTIO
         # summary
         if task.status:
             p(u'{} '.format(_status_to_alias[unicode(task.status)]))
+        if task.done_date:
+            p(u'{} '.format(_strftime(task.done_date)))
         p(task.summary)
 
         # due
@@ -99,6 +101,8 @@ def parse_tmpfile(lines, description_indent=DESCRIPTION_INDENT):
 
                 task = Task()
                 task.status = _extract_status(flags)
+                if task.done:
+                    task.done_date = _extract_done_date(flags)
                 task.due = _extract_due_date(flags)
                 task.calendar = _extract_calendar(flags)
                 # ids don't need to be numeric, yay ducktyping!
@@ -118,6 +122,17 @@ def parse_tmpfile(lines, description_indent=DESCRIPTION_INDENT):
     return ids
 
 
+def _extract_date(string):
+    if u'/' in string:
+        return datetime.datetime.strptime(string, DATETIME_FORMAT)
+    elif u'-' in string:
+        return datetime.datetime.strptime(string, DATE_FORMAT).date()
+    elif u':' in string:
+        return datetime.datetime.strptime(string, TIME_FORMAT).time()
+    else:
+        raise ValueError()
+
+
 def _extract_due_date(flags):
     '''Allowed values:
         due:YYYY-mm-dd
@@ -128,19 +143,21 @@ def _extract_due_date(flags):
         if flag.startswith('due:'):
             flag = flag[4:]
             try:
-                if u'/' in flag:
-                    rv = datetime.datetime.strptime(flag, DATETIME_FORMAT)
-                elif u'-' in flag:
-                    rv = datetime.datetime.strptime(flag, DATE_FORMAT).date()
-                elif u':' in flag:
-                    rv = datetime.datetime.strptime(flag, TIME_FORMAT).time()
-                else:
-                    raise ValueError()
+                rv = _extract_date(flag)
             except ValueError:
                 pass
             else:
                 del flags[i]
                 return rv
+
+def _extract_done_date(flags):
+    try:
+        x = _extract_date(flags[0])
+    except ValueError:
+        return None
+    else:
+        del flags[0]
+        return x
 
 def _compile_status_table():
     statuses = [
