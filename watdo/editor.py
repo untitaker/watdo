@@ -15,9 +15,9 @@ import datetime
 import os
 
 DESCRIPTION_INDENT = u'    '
-DATE_FORMAT = '%Y/%m/%d'
+DATE_FORMAT = '%Y-%m-%d'
 TIME_FORMAT = '%H:%M'
-DATETIME_FORMAT = DATE_FORMAT + '-' + TIME_FORMAT
+DATETIME_FORMAT = DATE_FORMAT + '/' + TIME_FORMAT
 
 
 def _strftime(x):
@@ -120,8 +120,8 @@ def parse_tmpfile(lines, description_indent=DESCRIPTION_INDENT):
 
 def _extract_due_date(flags):
     '''Allowed values:
-        due:YYYY/MM/DD
-        due:YYYY/MM/DD-HH:mm
+        due:YYYY-mm-dd
+        due:YYYY-mm-dd/HH:MM
         due:HH:mm
     '''
     for i, flag in enumerate(flags):
