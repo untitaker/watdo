@@ -50,12 +50,12 @@ class EditorTestCase(TestCase):
 
     def test_date_and_time(self):
         for due, formatted_due, new_due, formatted_new_due in [
-            (datetime.date(2013, 9, 11), '2013/09/11',
-             datetime.date(2013, 12, 17), '2013/12/17'),
+            (datetime.date(2013, 9, 11), '2013-09-11',
+             datetime.date(2013, 12, 17), '2013-12-17'),
             (datetime.time(13, 37), '13:37',
              datetime.time(14, 40), '14:40'),
-            (datetime.datetime(2013, 9, 11, 13, 37), '2013/09/11-13:37',
-             datetime.datetime(2013, 12, 17, 14, 40), '2013/12/17-14:40')
+            (datetime.datetime(2013, 9, 11, 13, 37), '2013-09-11/13:37',
+             datetime.datetime(2013, 12, 17, 14, 40), '2013-12-17/14:40')
         ]:
 
             f = StringIO()

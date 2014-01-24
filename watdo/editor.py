@@ -128,9 +128,9 @@ def _extract_due_date(flags):
         if flag.startswith('due:'):
             flag = flag[4:]
             try:
-                if u'-' in flag:
+                if u'/' in flag:
                     rv = datetime.datetime.strptime(flag, DATETIME_FORMAT)
-                elif u'/' in flag:
+                elif u'-' in flag:
                     rv = datetime.datetime.strptime(flag, DATE_FORMAT).date()
                 elif u':' in flag:
                     rv = datetime.datetime.strptime(flag, TIME_FORMAT).time()
