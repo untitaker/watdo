@@ -42,7 +42,7 @@ def _by_deadline(x):
         return datetime.datetime(now.year, now.month, now.day,
                                  x.hour, x.minute, x.second)
     else:
-        return now
+        return datetime.datetime.max
 
 
 def generate_tmpfile(f, tasks, header=u'// watdo', description_indent=DESCRIPTION_INDENT):
