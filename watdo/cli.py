@@ -20,6 +20,7 @@ import os
 import sys
 import argparse
 import ConfigParser
+import argvard
 
 
 def confirm_changes(changes):
@@ -92,38 +93,6 @@ def launch_editor(cfg, tmpfilesuffix='.markdown', all_tasks=False, calendar=None
         os.remove(tmpfile.name)
 
 
-def get_argument_parser():
-    epilog = '''
-Common operations:
-watdo  # show pending tasks from all calendars
-watdo -a  # show all tasks, even finished ones
-watdo computers  # show pending tasks from calendar "computers"
-watdo computers -n "remove virus"  # add task to "computers"
-echo "HDD wipe neccessary" | watdo computers -n "remove virus"  # add task with description
-'''
-    parser = argparse.ArgumentParser(
-        description='Simple task-list manager.',
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog=epilog)
-    parser.add_argument('--all', '-a', dest='show_all_tasks',
-                        action='store_const', const=True, default=None,
-                        help=('Watdo normally shows only uncompleted tasks '
-                              'and marks them as done if they get deleted '
-                              'from the tmpfile. This mode will make watdo '
-                              'show all tasks and actually delete them.'))
-    parser.add_argument('--new', '-n', dest='new_task', default=None,
-                        help='Create new task instead of opening the editor. '
-                        'Needs a calendar to add the task to, and takes a '
-                        'description through stdin.')
-    parser.add_argument('calendar_name', nargs='?', default=None,
-                        help='Optional, a calendar to operate on.')
-    parser.add_argument('--noconfirm', dest='confirmation',
-                        action='store_const', const=False, default=None,
-                        help=('Disable any confirmations.'))
-
-    return parser
-
-
 def create_config_file():
     def input(msg):
         return raw_input(msg + ' ').strip() or None
@@ -156,12 +125,12 @@ def get_config_parser(env):
 
 def main():
     env = os.environ
-    args = vars(get_argument_parser().parse_args())
     cfg = get_config_parser(os.environ)
-    _main(env, args, cfg)
+    _main(env, cfg)
 
 
-def _main(env, args, file_cfg):
+def _main(env, file_cfg):
+    app = argvard.Argvard()
     cfg = {
         'PATH': path(
             env.get('WATDO_PATH') or
@@ -179,18 +148,30 @@ def _main(env, args, file_cfg):
             env.get('EDITOR') or
             bail_out('No editor could be determined. Make sure you\'ve got '
                      'either $WATDO_EDITOR or $EDITOR set.')
-        ),
-        'CONFIRMATION': next((x for x in (args['confirmation'], True)
-                              if x is not None))
+        )
     }
 
-    if args['new_task'] is not None:
-        # create a new task
-        calendar, summary = args['calendar_name'], args['new_task']
-        if not summary:
-            bail_out('Missing summary.')
-        if not calendar:
-            bail_out('Missing calendar.')
+    @app.option('--noconfirm')
+    def option_confirmation(context):
+        '''Skip confirmation of changes.'''
+        context['confirmation'] = False
+
+    @app.option('-a')
+    @app.option('--all')
+    def option_show_all_tasks(context):
+        '''Show all tasks, not only unfinished ones.'''
+        context['show_all_tasks'] = True
+
+    @app.main('[calendar]')
+    def main(context, calendar=None):
+        changes = launch_editor(cfg, all_tasks=context.get('show_all_tasks', False), calendar=calendar)
+        if context.get('confirmation', True):
+            changes = confirm_changes(changes)
+        make_changes(changes, cfg)
+
+    new_task = argvard.Command()
+    @new_task.main('calendar summary')
+    def new_task_main(context, calendar, summary):
         if sys.stdin.isatty():
             print('I see you haven\'t piped anything into watdo for the \n'
                   'description. Type something and hit ^D if you\'re done.')
@@ -200,10 +181,5 @@ def _main(env, args, file_cfg):
         t.calendar = calendar
         print('Creating task: "{}" in {}'.format(summary, calendar))
         t.write(create=True)
-
-    else:
-        # display all tasks from calendar, default to all calendars
-        changes = launch_editor(cfg, all_tasks=args['show_all_tasks'], calendar=args['calendar_name'])
-        if cfg['CONFIRMATION']:
-            changes = confirm_changes(changes)
-        make_changes(changes, cfg)
+    app.register_command('new', new_task)
+    app()
