@@ -111,7 +111,10 @@ class Task(object):
         dt = self.main.get('due', None)
         if dt is None:
             return None
-        return dt.dt
+        dt = dt.dt
+        if isinstance(dt, datetime.datetime):
+            dt = dt.replace(tzinfo=None)
+        return dt
 
     @due.setter
     def due(self, dt):
