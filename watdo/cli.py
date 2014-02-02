@@ -156,8 +156,7 @@ def _main(env, file_cfg):
         '''Skip confirmation of changes.'''
         context['confirmation'] = False
 
-    @app.option('-a')
-    @app.option('--all')
+    @app.option('-a|--all')
     def option_show_all_tasks(context):
         '''Show all tasks, not only unfinished ones.'''
         context['show_all_tasks'] = True
