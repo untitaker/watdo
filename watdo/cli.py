@@ -125,7 +125,7 @@ def get_config_parser(env):
 
 def main():
     env = os.environ
-    cfg = get_config_parser(os.environ)
+    cfg = get_config_parser(env)
     _main(env, cfg)
 
 
