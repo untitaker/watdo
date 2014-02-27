@@ -93,7 +93,7 @@ class Task(object):
             os.remove(self._old_filepaths.pop())
 
     def random_filename(self):
-        self.filename = self.main['uid'].split('@')[0] + u'.ics'
+        self.filename = self.main['uid'] + u'.ics'
 
     def update(self, other):
         self.due = other.due
