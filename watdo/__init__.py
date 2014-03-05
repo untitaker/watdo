@@ -10,4 +10,4 @@
     :license: MIT, see LICENSE for more details.
 '''
 
-__version__ = '0.1.2'
+__version__ = '0.2.0'
