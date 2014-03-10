@@ -80,6 +80,20 @@ def generate_tmpfile(f, tasks, header=u'// watdo', description_indent=DESCRIPTIO
     return ids
 
 
+def parse_summary_header(task_summary):
+    flags = task_summary.split()
+    task = Task()
+    task.status = _extract_status(flags)
+    if task.done:
+        task.done_date = _extract_done_date(flags)
+    task.due = _extract_due_date(flags)
+    task.calendar = _extract_calendar(flags)
+    # ids don't need to be numeric, yay ducktyping!
+    task_id = _extract_id(flags) or task_summary
+    task.summary = u' '.join(flags)
+    return task_id, task
+
+
 def parse_tmpfile(lines, description_indent=DESCRIPTION_INDENT):
     ids = {}
     task_id = None
@@ -97,17 +111,8 @@ def parse_tmpfile(lines, description_indent=DESCRIPTION_INDENT):
                     descriptions[task_id].append(line)
             else:
                 task_summary = line
-                flags = task_summary.split()
+                task_id, task = parse_summary_header(task_summary)
 
-                task = Task()
-                task.status = _extract_status(flags)
-                if task.done:
-                    task.done_date = _extract_done_date(flags)
-                task.due = _extract_due_date(flags)
-                task.calendar = _extract_calendar(flags)
-                # ids don't need to be numeric, yay ducktyping!
-                task_id = _extract_id(flags) or line
-                task.summary = u' '.join(flags)
                 if task_id in ids:
                     raise ParsingError('This list index already has been '
                                        'used for this calendar')

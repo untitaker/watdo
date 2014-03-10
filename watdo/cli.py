@@ -169,16 +169,17 @@ def _main(env, file_cfg):
         make_changes(changes, cfg)
 
     new_task = argvard.Command()
-    @new_task.main('calendar summary')
-    def new_task_main(context, calendar, summary):
+    @new_task.main('summary')
+    def new_task_main(context, summary):
         if sys.stdin.isatty():
             print('I see you haven\'t piped anything into watdo for the \n'
                   'description. Type something and hit ^D if you\'re done.')
         description = sys.stdin.read()
-        t = model.Task(summary=summary, description=description)
+        _, t = editor.parse_summary_header(summary)
+        t.description = description
         t.basepath = cfg['PATH']
-        t.calendar = calendar
-        print('Creating task: "{}" in {}'.format(summary, calendar))
+        print('Creating task: "{}" in {}'.format(t.summary, t.calendar))
         t.write(create=True)
     app.register_command('new', new_task)
+    app.register_command('add', new_task)
     app()
