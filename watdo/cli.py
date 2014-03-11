@@ -177,10 +177,10 @@ def _main(env, file_cfg):
         description = sys.stdin.read()
         # As a command-line argument summary is bytes. Not sure what the
         # appropriate encoding is, but it probably is utf-8 in most cases.
-        _, t = editor.parse_summary_header(summary.encode('utf-8'))
+        _, t = editor.parse_summary_header(summary.decode('utf-8'))
         t.description = description
         t.basepath = cfg['PATH']
-        print('Creating task: "{}" in {}'.format(t.summary, t.calendar))
+        print(u'Creating task: "{}" in {}'.format(t.summary, t.calendar))
         t.write(create=True)
     app.register_command('new', new_task)
     app.register_command('add', new_task)
