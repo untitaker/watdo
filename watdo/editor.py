@@ -20,17 +20,6 @@ TIME_FORMAT = '%H:%M'
 DATETIME_FORMAT = DATE_FORMAT + '/' + TIME_FORMAT
 
 
-def _strftime(x):
-    if isinstance(x, datetime.datetime):
-        return x.strftime(DATETIME_FORMAT)
-    elif isinstance(x, datetime.date):
-        return x.strftime(DATE_FORMAT)
-    elif isinstance(x, datetime.time):
-        return x.strftime(TIME_FORMAT)
-    else:
-        raise TypeError()
-
-
 def _by_deadline(x):
     x = x.due
     now = datetime.datetime.now()
@@ -45,7 +34,8 @@ def _by_deadline(x):
         return datetime.datetime.max
 
 
-def generate_tmpfile(f, tasks, header=u'// watdo', description_indent=DESCRIPTION_INDENT):
+def generate_tmpfile(f, tasks, header=u'// watdo',
+                     description_indent=DESCRIPTION_INDENT):
     '''Given a file-like object ``f`` and a path, write todo file to ``f``,
     return a ``ids`` object'''
 
@@ -128,7 +118,14 @@ def parse_tmpfile(lines, description_indent=DESCRIPTION_INDENT):
 
 
 def _extract_date(string):
-    if u'/' in string:
+    now = datetime.datetime.now()
+    if string == u'today':
+        return now.date()
+    elif string == u'now':
+        return now
+    elif string == u'tomorrow':
+        return now.date() + datetime.timedelta(days=1)
+    elif u'/' in string:
         return datetime.datetime.strptime(string, DATETIME_FORMAT)
     elif u'-' in string:
         return datetime.datetime.strptime(string, DATE_FORMAT).date()
@@ -136,6 +133,19 @@ def _extract_date(string):
         return datetime.datetime.strptime(string, TIME_FORMAT).time()
     else:
         raise ValueError()
+
+
+def _strftime(x):
+    '''Format datetime object back to todo.txt. No shortcuts here because that
+    would mess with todo.txt syntax highlighting too much.'''
+    if isinstance(x, datetime.datetime):
+        return x.strftime(DATETIME_FORMAT)
+    elif isinstance(x, datetime.date):
+        return x.strftime(DATE_FORMAT)
+    elif isinstance(x, datetime.time):
+        return x.strftime(TIME_FORMAT)
+    else:
+        raise TypeError()
 
 
 def _extract_due_date(flags):
@@ -155,6 +165,7 @@ def _extract_due_date(flags):
                 del flags[i]
                 return rv
 
+
 def _extract_done_date(flags):
     try:
         x = _extract_date(flags[0])
@@ -163,6 +174,7 @@ def _extract_done_date(flags):
     else:
         del flags[0]
         return x
+
 
 def _compile_status_table():
     statuses = [
@@ -183,6 +195,7 @@ def _compile_status_table():
 
 _status_to_alias, _alias_to_status = _compile_status_table()
 del _compile_status_table
+
 
 def _extract_status(flags):
     x = _alias_to_status.get(flags[0], u'')
