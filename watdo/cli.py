@@ -175,7 +175,9 @@ def _main(env, file_cfg):
             print('I see you haven\'t piped anything into watdo for the \n'
                   'description. Type something and hit ^D if you\'re done.')
         description = sys.stdin.read()
-        _, t = editor.parse_summary_header(summary)
+        # As a command-line argument summary is bytes. Not sure what the
+        # appropriate encoding is, but it probably is utf-8 in most cases.
+        _, t = editor.parse_summary_header(summary.encode('utf-8'))
         t.description = description
         t.basepath = cfg['PATH']
         print('Creating task: "{}" in {}'.format(t.summary, t.calendar))
