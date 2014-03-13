@@ -151,8 +151,17 @@ def _main(env, file_cfg):
         )
     }
 
-    @app.option('--noconfirm')
+    confirmation = \
+        file_cfg.get('confirmation', 'true').strip().lower() not in ('false', 'off', 'no')
+
+    @app.option('--confirm')
     def option_confirmation(context):
+        '''Confirm changes. This is enabled by default. Can be set with a
+        "confirmation" paramter in the config file.'''
+        context['confirmation'] = True
+
+    @app.option('--noconfirm')
+    def option_no_confirmation(context):
         '''Skip confirmation of changes.'''
         context['confirmation'] = False
 
@@ -164,7 +173,7 @@ def _main(env, file_cfg):
     @app.main('[calendar]')
     def main(context, calendar=None):
         changes = launch_editor(cfg, all_tasks=context.get('show_all_tasks', False), calendar=calendar)
-        if context.get('confirmation', True):
+        if context.get('confirmation', confirmation):
             changes = confirm_changes(changes)
         make_changes(changes, cfg)
 
@@ -182,6 +191,7 @@ def _main(env, file_cfg):
         t.basepath = cfg['PATH']
         print(u'Creating task: "{}" in {}'.format(t.summary, t.calendar))
         t.write(create=True)
+
     app.register_command('new', new_task)
     app.register_command('add', new_task)
     app()
