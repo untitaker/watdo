@@ -101,7 +101,9 @@ def create_config_file():
         'path': input('Where are your tasks stored? '
                       '[default: ~/.watdo/tasks/]'),
         'tmppath': input('Where should tmpfiles for editing be stored? '
-                         '[default: ~/.watdo/tmp/]')
+                         '[default: ~/.watdo/tmp/]'),
+        'confirmation': str(confirm('Should watdo ask for confirmation of the '
+                                    'changes after closing the editor? (Y/n) '))
     }
     return ((k, v) for k, v in cfg.iteritems() if v)
 
