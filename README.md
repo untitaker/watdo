@@ -10,10 +10,8 @@
     Any changes you make to that file will be mirrored to the described storage
     system after closing the editor.
 
-*   Watdo will *never* support syncronization to remote servers in the core.
-    Instead, this task should be accomplished by additional programs that
-    access watdo's storage. This concept is inspired by the popular combination
-    of mutt and offlineimap.
+*   You can use [vdirsyncer](https://github.com/untitaker/vdirsyncer) to sync
+    your tasks with online services.
 
 *   The only Python version watdo is tested with is 2.7.
 
@@ -69,6 +67,3 @@
 
 8.  Tasks with the status `COMPLETED` or `CANCELLED` are not shown by default.
     You can view these tasks with `watdo -a`.
-
-There is also an article available about [syncronizing your tasks with other
-devices](https://github.com/untitaker/watdo/wiki/Syncronization).
