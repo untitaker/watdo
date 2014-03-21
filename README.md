@@ -32,8 +32,8 @@
 
         My task description due:2014-09-09 @computers id:1
 
-    The date format for the `due` flag can be either YYYY-mm-dd,
-    YYYY-mm-dd/HH:MM or HH:MM.
+    The date format for the `due` flag can be either `YYYY-mm-dd`,
+    `YYYY-mm-dd/HH:MM` or `HH:MM`. It can also be `today`, `now` or `tomorrow`.
 
     The `@computers` indicates the task is saved in the calendar/task-list
     called "computers".
