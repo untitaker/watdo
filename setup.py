@@ -14,12 +14,13 @@ from setuptools import setup, find_packages
 
 setup(
     name='watdo',
-    version='0.2.0',
+    version='0.2.1',
     author='Markus Unterwaditzer',
     author_email='markus@unterwaditzer.net',
     url='https://github.com/untitaker/watdo',
     description='Task-manager for the command line.',
-    long_description=open('README.md').read(),
+    license='MIT',
+    long_description=open('README.rst').read(),
     packages=find_packages(),
     include_package_data=True,
     entry_points={
