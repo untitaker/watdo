@@ -56,7 +56,7 @@ Simple usage of watdo
 
    Or really any valid value for the ``STATUS`` property in the `the iCalendar
    standard <http://www.kanzaki.com/docs/ical/status.html>`_. There is also
-   ``.`` as a shortcut for ``IN-PROCESS`` and ``!`` for ``NEEDS-ACTION``.
+   ``.`` as a shortcut for ``IN-PROCESS``. ``NEEDS-ACTION`` is ignored.
 
    If you get the syntax of your file wrong, watdo *should* allow you to edit
    it again after showing an error. It's still in alpha though.

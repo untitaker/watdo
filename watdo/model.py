@@ -161,7 +161,8 @@ class Task(object):
 
     @property
     def status(self):
-        return self.main.get('status', u'')
+        x = self.main.get('status', u'NEEDS-ACTION')
+        return x if x != u'NEEDS-ACTION' else u''
 
     @status.setter
     def status(self, val):

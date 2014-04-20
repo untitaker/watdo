@@ -181,7 +181,7 @@ def _compile_status_table():
         (u'COMPLETED', u'x'),
         (u'IN-PROCESS', u'.'),
         (u'CANCELLED', None),
-        (u'NEEDS-ACTION', u'!')
+        (u'NEEDS-ACTION', None)
     ]
     status_to_alias = {}
     alias_to_status = {}
