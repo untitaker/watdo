@@ -76,4 +76,5 @@ Simple usage of watdo
 License
 =======
 
-watdo is released under the MIT License, see ``LICENSE`` for more details.
+watdo is released under the Expat/MIT License, see ``LICENSE`` for more
+details.
