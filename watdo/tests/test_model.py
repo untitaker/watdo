@@ -7,34 +7,32 @@
     :license: MIT, see LICENSE for more details.
 '''
 
-from watdo.tests import TestCase, TemporaryFile
 import watdo.model as model
 Task = model.Task
-import os
 
 
-class TaskTestCase(TestCase):
-    def test_writing(self):
-        with TemporaryFile() as tmp:
-            t = Task(
-                summary='My little task',
-                description=('This is my task\n'
-                             'My task is amazing\n\n'
-                             'it is t3h r0xx0rz'),
-                calendar='foo_cal',
-                basepath=tmp.path
-            )
-            os.mkdir(os.path.join(tmp.path, 'foo_cal'))
-            t.write(create=True)
-            assert t.filepath.startswith(os.path.join(tmp.path, 'foo_cal'))
-            with open(t.filepath) as f:
-                lines = set(map(str.strip, f))
-                assert b'BEGIN:VCALENDAR' in lines
-                assert b'VERSION:2.0' in lines
-                assert b'PRODID:-//watdo//mimedir.icalendar//EN' in lines
-                assert b'BEGIN:VTODO' in lines
-                assert b'SUMMARY:My little task' in lines
-                assert any(b'This is my task' in line for line in lines)
+class TestTask(object):
+    def test_writing(self, tmpdir):
+        t = Task(
+            summary='My little task',
+            description=('This is my task\n'
+                         'My task is amazing\n\n'
+                         'it is t3h r0xx0rz'),
+            calendar='foo_cal',
+            basepath=str(tmpdir)
+        )
+        calendar = tmpdir.mkdir('foo_cal')
+        t.write(create=True)
+        assert t.filepath.startswith(str(calendar))
+
+        with open(t.filepath) as f:
+            lines = set(map(str.strip, f))
+            assert b'BEGIN:VCALENDAR' in lines
+            assert b'VERSION:2.0' in lines
+            assert b'PRODID:-//watdo//mimedir.icalendar//EN' in lines
+            assert b'BEGIN:VTODO' in lines
+            assert b'SUMMARY:My little task' in lines
+            assert any(b'This is my task' in line for line in lines)
 
     def test_updating(self):
         a = Task(summary='My cool task one')
@@ -53,8 +51,8 @@ class TaskTestCase(TestCase):
         assert a.main['last-modified'].dt > old_date.dt
 
 
-class FileSystemTestCase(TestCase):
-    def test_walk_calendar(self):
+class TestFileSystem(object):
+    def test_walk_calendar(self, tmpdir):
         tasks = [
             Task(summary='task1.1', calendar='cal1'),
             Task(summary='task1.2', calendar='cal1'),
@@ -67,14 +65,16 @@ class FileSystemTestCase(TestCase):
             Task(summary='task3.3', calendar='cal3')
         ]
 
-        with TemporaryFile() as tmp:
-            for task in tasks:
-                dirpath = os.path.join(tmp.path, task.calendar)
-                if not os.path.isdir(dirpath):
-                    os.mkdir(dirpath)
-                task.basepath = tmp.path
-                task.write(create=True)
+        calendars = set()
 
-            rv = sorted(model.walk_calendars(tmp.path),
-                        key=lambda x: x.summary)
-            assert tasks == rv
+        for task in tasks:
+            if task.calendar not in calendars:
+                calendar = tmpdir.mkdir(task.calendar)
+                calendars.add(task.calendar)
+            task.basepath = str(tmpdir)
+            task.write(create=True)
+
+        rv = sorted(model.walk_calendars(str(tmpdir)),
+                    key=lambda x: x.summary)
+
+        assert tasks == rv
