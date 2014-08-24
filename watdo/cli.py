@@ -18,7 +18,6 @@ import subprocess
 import tempfile
 import os
 import sys
-import argparse
 import ConfigParser
 import argvard
 
@@ -52,7 +51,8 @@ def make_changes(changes, cfg):
         func(cfg)
 
 
-def launch_editor(cfg, tmpfilesuffix='.markdown', all_tasks=False, calendar=None):
+def launch_editor(cfg, tmpfilesuffix='.markdown', all_tasks=False,
+                  calendar=None):
     tmpfile = tempfile.NamedTemporaryFile(dir=cfg['TMPPATH'],
                                           suffix=tmpfilesuffix, delete=False)
 
@@ -70,7 +70,8 @@ def launch_editor(cfg, tmpfilesuffix='.markdown', all_tasks=False, calendar=None
 
             header = u'// Showing {status} tasks from {calendar}'.format(
                 status=(u'all' if all_tasks else u'pending'),
-                calendar=(u'all calendars' if calendar is None else u'@{}'.format(calendar))
+                calendar=(u'all calendars' if calendar is None else u'@{}'
+                          .format(calendar))
             )
             old_ids = editor.generate_tmpfile(f, task_filter(), header)
 
@@ -102,8 +103,9 @@ def create_config_file():
                       '[default: ~/.watdo/tasks/]'),
         'tmppath': input('Where should tmpfiles for editing be stored? '
                          '[default: ~/.watdo/tmp/]'),
-        'confirmation': str(confirm('Should watdo ask for confirmation of the '
-                                    'changes after closing the editor? (Y/n) '))
+        'confirmation': str(
+            confirm('Should watdo ask for confirmation of the '
+                    'changes after closing the editor? (Y/n) '))
     }
     return ((k, v) for k, v in cfg.iteritems() if v)
 
@@ -153,8 +155,8 @@ def _main(env, file_cfg):
         )
     }
 
-    confirmation = \
-        file_cfg.get('confirmation', 'true').strip().lower() not in ('false', 'off', 'no')
+    confirmation = file_cfg.get('confirmation', 'true').strip().lower() \
+        not in ('false', 'off', 'no')
 
     @app.option('--confirm')
     def option_confirmation(context):
@@ -174,12 +176,17 @@ def _main(env, file_cfg):
 
     @app.main('[calendar]')
     def main(context, calendar=None):
-        changes = launch_editor(cfg, all_tasks=context.get('show_all_tasks', False), calendar=calendar)
+        changes = launch_editor(
+            cfg,
+            all_tasks=context.get('show_all_tasks', False),
+            calendar=calendar
+        )
         if context.get('confirmation', confirmation):
             changes = confirm_changes(changes)
         make_changes(changes, cfg)
 
     new_task = argvard.Command()
+
     @new_task.main('summary')
     def new_task_main(context, summary):
         if sys.stdin.isatty():

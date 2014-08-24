@@ -10,8 +10,6 @@
     :license: MIT, see LICENSE for more details.
 '''
 
-from unittest import TestCase
-from StringIO import StringIO
 import tempfile
 import shutil
 

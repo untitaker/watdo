@@ -17,7 +17,8 @@ class EditorTestCase(TestCase):
     def test_basic(self):
         f = StringIO()
         tasks = [
-            Task(summary=u'My cool task 1', description=u'lel', calendar='test_cal'),
+            Task(summary=u'My cool task 1', description=u'lel',
+                 calendar='test_cal'),
             Task(summary=u'My cool task 2', calendar='test_cal')
         ]
         old_ids = editor.generate_tmpfile(f, tasks)
@@ -64,9 +65,11 @@ class EditorTestCase(TestCase):
             old_ids = editor.generate_tmpfile(f, tasks)
             lines = f.getvalue().splitlines()
 
-            assert lines[1] == 'My cool task due:{} @test_cal id:1'.format(formatted_due)
+            assert lines[1] == ('My cool task due:{} @test_cal id:1'
+                                .format(formatted_due))
 
-            lines[1] = 'My cool task @test_cal due:{} id:1'.format(formatted_new_due)
+            lines[1] = ('My cool task @test_cal due:{} id:1'
+                        .format(formatted_new_due))
             new_ids = editor.parse_tmpfile(lines)
             ids_diff = editor.diff_calendars(old_ids, new_ids)
 

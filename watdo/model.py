@@ -83,7 +83,8 @@ class Task(object):
         mode = 'wb' if not create and not self._old_filepaths else 'wb+'
         if self.filename is None:
             if not create:
-                raise ValueError('Create arg must be true if filename is None.')
+                raise ValueError('Create arg must be true '
+                                 'if filename is None.')
             self.random_filename()
             if self.filepath is None:
                 raise ValueError('basepath and calendar must be set.')
@@ -174,13 +175,13 @@ class Task(object):
         return 0 if self.__eq__(x) else -1
 
     def __eq__(self, other):
-        return (
-            isinstance(other, type(self)) and
-            self.summary.rstrip(u'\n') == other.summary.rstrip(u'\n') and
-            self.description.rstrip(u'\n') == other.description.rstrip(u'\n') and
-            self.due == other.due and
+        return all((
+            isinstance(other, type(self)),
+            self.summary.rstrip(u'\n') == other.summary.rstrip(u'\n'),
+            self.description.rstrip(u'\n') == other.description.rstrip(u'\n'),
+            self.due == other.due,
             self.status == other.status
-        )
+        ))
 
     def __repr__(self):
         return 'watdo.model.Task({})'.format({
