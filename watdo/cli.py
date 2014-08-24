@@ -13,13 +13,12 @@
 
 import watdo.editor as editor
 import watdo.model as model
-from watdo.cli_utils import path, confirm, check_directory, bail_out
+from watdo.cli_utils import path, confirm, check_directory, parse_config_value
 import subprocess
 import tempfile
 import os
-import sys
 import ConfigParser
-import argvard
+import click
 
 
 def confirm_changes(changes):
@@ -127,80 +126,79 @@ def get_config_parser(env):
     return dict(parser.items('watdo'))
 
 
-def main():
-    env = os.environ
-    cfg = get_config_parser(env)
-    _main(env, cfg)
+def _get_cli():
+    @click.group(invoke_without_command=True)
+    @click.option('--confirm/--no-confirm', default=None,
+                  help=('Confirm changes. Can be set with a "confirmation" '
+                        'parameter in the config file.'))
+    @click.option('--all/--pending', '-a',
+                  help='Show all tasks, not only unfinished ones.')
+    @click.option('--calendar', '-c', nargs=-1, multiple=True,
+                  help='The calendar to show')
+    @click.pass_context
+    def cli(ctx, confirm, all, calendar):
+        if ctx.obj is None:
+            ctx.obj = {}
 
+        def bail_out(msg):
+            click.echo(msg)
+            ctx.abort()
 
-def _main(env, file_cfg):
-    app = argvard.Argvard()
-    cfg = {
-        'PATH': path(
-            env.get('WATDO_PATH') or
-            file_cfg.get('path') or
-            '~/.watdo/tasks/'
-        ),
-        'TMPPATH': path(
-            env.get('WATDO_TMPPATH') or
-            file_cfg.get('tmppath') or
-            '~/.watdo/tmp/'
-        ),
-        'EDITOR': (
-            env.get('WATDO_EDITOR') or
-            file_cfg.get('editor') or
-            env.get('EDITOR') or
-            bail_out('No editor could be determined. Make sure you\'ve got '
-                     'either $WATDO_EDITOR or $EDITOR set.')
-        )
-    }
+        file_cfg = get_config_parser(os.environ)
+        ctx.obj['cfg'] = cfg = {
+            'PATH': path(
+                os.environ.get('WATDO_PATH') or
+                file_cfg.get('path') or
+                '~/.watdo/tasks/'
+            ),
+            'TMPPATH': path(
+                os.environ.get('WATDO_TMPPATH') or
+                file_cfg.get('tmppath') or
+                '~/.watdo/tmp/'
+            ),
+            'EDITOR': (
+                os.environ.get('WATDO_EDITOR') or
+                file_cfg.get('editor') or
+                os.environ.get('EDITOR') or
+                bail_out('No editor could be determined. Make sure you\'ve '
+                         'got either $WATDO_EDITOR or $EDITOR set.')
+            )
+        }
 
-    confirmation = file_cfg.get('confirmation', 'true').strip().lower() \
-        not in ('false', 'off', 'no')
+        confirm_default = parse_config_value(
+            file_cfg.get('confirmation', 'true'))
 
-    @app.option('--confirm')
-    def option_confirmation(context):
-        '''Confirm changes. This is enabled by default. Can be set with a
-        "confirmation" paramter in the config file.'''
-        context['confirmation'] = True
+        if confirm is None:
+            confirm = confirm_default
 
-    @app.option('--noconfirm')
-    def option_no_confirmation(context):
-        '''Skip confirmation of changes.'''
-        context['confirmation'] = False
+        ctx.obj['confirmation'] = confirm
+        ctx.obj['show_all_tasks'] = all
 
-    @app.option('-a|--all')
-    def option_show_all_tasks(context):
-        '''Show all tasks, not only unfinished ones.'''
-        context['show_all_tasks'] = True
+        if not ctx.args:
+            changes = launch_editor(
+                cfg,
+                all_tasks=ctx.obj.get('show_all_tasks', False),
+                calendar=calendar or None
+            )
+            if ctx.obj['confirmation']:
+                changes = confirm_changes(changes)
+            make_changes(changes, cfg)
 
-    @app.main('[calendar]')
-    def main(context, calendar=None):
-        changes = launch_editor(
-            cfg,
-            all_tasks=context.get('show_all_tasks', False),
-            calendar=calendar
-        )
-        if context.get('confirmation', confirmation):
-            changes = confirm_changes(changes)
-        make_changes(changes, cfg)
-
-    new_task = argvard.Command()
-
-    @new_task.main('summary')
-    def new_task_main(context, summary):
-        if sys.stdin.isatty():
-            print('I see you haven\'t piped anything into watdo for the \n'
-                  'description. Type something and hit ^D if you\'re done.')
-        description = sys.stdin.read()
+    @cli.command()
+    @click.argument('summary')
+    @click.option('--description', default='', help='An optional description.')
+    @click.pass_context
+    def new(ctx, summary, description):
+        '''Create a new task. The summary has the same format as the first
+        lines of a task inside the editor.'''
         # As a command-line argument summary is bytes. Not sure what the
         # appropriate encoding is, but it probably is utf-8 in most cases.
         _, t = editor.parse_summary_header(summary.decode('utf-8'))
         t.description = description
-        t.basepath = cfg['PATH']
+        t.basepath = ctx.obj['cfg']['PATH']
         print(u'Creating task: "{}" in {}'.format(t.summary, t.calendar))
         t.write(create=True)
 
-    app.register_command('new', new_task)
-    app.register_command('add', new_task)
-    app()
+    return cli
+
+main = _get_cli()

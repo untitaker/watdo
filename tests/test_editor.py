@@ -10,9 +10,9 @@
 import pytest
 
 try:
-    from io import StringIO
+    from io import BytesIO
 except ImportError:
-    from StringIO import StringIO
+    from StringIO import StringIO as BytesIO
 
 from watdo.model import Task, ParsingError
 import watdo.editor as editor
@@ -20,7 +20,7 @@ import datetime
 
 
 def test_basic():
-    f = StringIO()
+    f = BytesIO()
     tasks = [
         Task(summary=u'My cool task 1', description=u'lel',
              calendar='test_cal'),
@@ -65,7 +65,7 @@ def test_date_and_time():
          datetime.datetime(2013, 12, 17, 14, 40), '2013-12-17/14:40')
     ]:
 
-        f = StringIO()
+        f = BytesIO()
         task = Task(summary=u'My cool task', due=due, calendar='test_cal')
         tasks = [task]
         old_ids = editor.generate_tmpfile(f, tasks)
@@ -110,7 +110,7 @@ def test_descriptions():
         )
     ]
 
-    f = StringIO()
+    f = BytesIO()
     old_ids = editor.generate_tmpfile(f, calendars)
 
     new_ids = editor.parse_tmpfile(f.getvalue().splitlines())

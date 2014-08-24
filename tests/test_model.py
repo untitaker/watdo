@@ -69,7 +69,7 @@ class TestFileSystem(object):
 
         for task in tasks:
             if task.calendar not in calendars:
-                calendar = tmpdir.mkdir(task.calendar)
+                tmpdir.mkdir(task.calendar)
                 calendars.add(task.calendar)
             task.basepath = str(tmpdir)
             task.write(create=True)

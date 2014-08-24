@@ -11,12 +11,15 @@
 '''
 
 import os
-import sys
 
 
-def bail_out(msg):
-    print(msg)
-    sys.exit(1)
+def parse_config_value(x):
+    if x.strip().lower() in ('true', 'on', 'yes'):
+        return True
+    elif x.strip().lower() in ('false', 'off', 'no'):
+        return False
+    else:
+        return x
 
 
 def check_directory(path):

@@ -26,5 +26,5 @@ setup(
     entry_points={
         'console_scripts': ['watdo = watdo.cli:main']
     },
-    install_requires=['icalendar', 'argvard']
+    install_requires=['icalendar', 'click']
 )
