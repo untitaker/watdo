@@ -17,7 +17,7 @@ A task-manager for the command line
 * You can use `vdirsyncer <https://github.com/untitaker/vdirsyncer>`_ to sync
   your tasks with online services.
 
-* The only Python version watdo is tested with is 2.7.
+* watdo works with Python 2.7+
 
 
 Simple usage of watdo
