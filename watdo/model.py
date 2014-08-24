@@ -14,6 +14,8 @@ import icalendar
 import icalendar.tools
 import os
 
+from ._compat import string_types, to_unicode
+
 
 class Task(object):
     #: the absolute path to the directory containing all calendars
@@ -35,7 +37,7 @@ class Task(object):
     _main = None
 
     def __init__(self, **kwargs):
-        for k, v in kwargs.iteritems():  # meh
+        for k, v in kwargs.items():  # meh
             setattr(self, k, v)
 
     @property
@@ -50,7 +52,7 @@ class Task(object):
             self._old_filepaths = set()
         if self.filepath is not None:
             self._old_filepaths.add(self.filepath)
-        self.basepath, self.calendar, self.filename = new.rsplit('/', 2)
+        self.basepath, self.calendar, self.filename = new.rsplit(u'/', 2)
 
     @property
     def vcal(self):
@@ -61,7 +63,7 @@ class Task(object):
 
     @vcal.setter
     def vcal(self, val):
-        if isinstance(val, (str, unicode)):
+        if isinstance(val, string_types):
             val = icalendar.Calendar.from_ical(val)
         self._vcal = val
 
@@ -121,6 +123,8 @@ class Task(object):
     def due(self, dt):
         self.main.pop('due', None)
         if dt is not None:
+            if isinstance(dt, string_types):
+                dt = to_unicode(dt)
             self.main.add('due', dt)
 
     @property
@@ -131,7 +135,7 @@ class Task(object):
     def summary(self, val):
         self.main.pop('summary', None)
         if val:
-            self.main['summary'] = val
+            self.main['summary'] = to_unicode(val)
 
     @property
     def done(self):
@@ -148,6 +152,8 @@ class Task(object):
     def done_date(self, dt):
         self.main.pop('completed', None)
         if dt is not None:
+            if isinstance(dt, string_types):
+                dt = to_unicode(dt)
             self.main.add('completed', dt)
 
     @property
@@ -158,7 +164,7 @@ class Task(object):
     def description(self, val):
         self.main.pop('description', None)
         if val:
-            self.main['description'] = val
+            self.main['description'] = to_unicode(val)
 
     @property
     def status(self):
@@ -169,7 +175,7 @@ class Task(object):
     def status(self, val):
         self.main.pop('status', None)
         if val:
-            self.main['status'] = val
+            self.main['status'] = to_unicode(val)
 
     def __cmp__(self, x):
         return 0 if self.__eq__(x) else -1

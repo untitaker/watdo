@@ -11,6 +11,7 @@
 '''
 
 from .model import Task, ParsingError
+from ._compat import text_type, to_unicode
 import datetime
 import os
 
@@ -50,7 +51,7 @@ def generate_tmpfile(f, tasks, header=u'// watdo',
 
         # summary
         if task.status:
-            p(u'{} '.format(_status_to_alias[unicode(task.status)]))
+            p(u'{} '.format(_status_to_alias[text_type(task.status)]))
         if task.done_date:
             p(u'{} '.format(_strftime(task.done_date)))
         p(task.summary)
@@ -91,7 +92,7 @@ def parse_tmpfile(lines, description_indent=DESCRIPTION_INDENT):
 
     for lineno, line in enumerate(lines, start=1):
         try:
-            line = line.decode('utf-8').rstrip(u'\n')
+            line = to_unicode(line).rstrip(u'\n')
             if line.startswith(u'//'):
                 pass
             elif line.startswith(description_indent) or not line:
@@ -111,7 +112,7 @@ def parse_tmpfile(lines, description_indent=DESCRIPTION_INDENT):
         except ParsingError as e:
             raise ParsingError('Line {}: {}'.format(lineno, str(e)))
 
-    for task_id, description in descriptions.iteritems():
+    for task_id, description in descriptions.items():
         ids[task_id].description = u'\n'.join(description).rstrip()
 
     return ids

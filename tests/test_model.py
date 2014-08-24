@@ -25,8 +25,8 @@ class TestTask(object):
         t.write(create=True)
         assert t.filepath.startswith(str(calendar))
 
-        with open(t.filepath) as f:
-            lines = set(map(str.strip, f))
+        with open(t.filepath, 'rb') as f:
+            lines = set(map(bytes.strip, f))
             assert b'BEGIN:VCALENDAR' in lines
             assert b'VERSION:2.0' in lines
             assert b'PRODID:-//watdo//mimedir.icalendar//EN' in lines

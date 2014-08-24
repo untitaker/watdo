@@ -106,7 +106,7 @@ def create_config_file():
             confirm('Should watdo ask for confirmation of the '
                     'changes after closing the editor? (Y/n) '))
     }
-    return ((k, v) for k, v in cfg.iteritems() if v)
+    return ((k, v) for k, v in cfg.items() if v)
 
 
 def get_config_parser(env):

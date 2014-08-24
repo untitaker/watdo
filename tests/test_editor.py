@@ -15,6 +15,7 @@ except ImportError:
     from StringIO import StringIO as BytesIO
 
 from watdo.model import Task, ParsingError
+from watdo._compat import to_bytes
 import watdo.editor as editor
 import datetime
 
@@ -31,9 +32,9 @@ def test_basic():
     lines = f.getvalue().splitlines()
 
     assert lines[1:] == [
-        'My cool task 1 @test_cal id:1',
-        '    lel',
-        'My cool task 2 @test_cal id:2'
+        b'My cool task 1 @test_cal id:1',
+        b'    lel',
+        b'My cool task 2 @test_cal id:2'
     ]
 
     lines[-1] = 'My cool modified task 2 @test_cal id:2'
@@ -71,11 +72,11 @@ def test_date_and_time():
         old_ids = editor.generate_tmpfile(f, tasks)
         lines = f.getvalue().splitlines()
 
-        assert lines[1] == ('My cool task due:{} @test_cal id:1'
-                            .format(formatted_due))
+        assert lines[1] == to_bytes(u'My cool task due:{} @test_cal id:1'
+                                    .format(formatted_due))
 
-        lines[1] = ('My cool task @test_cal due:{} id:1'
-                    .format(formatted_new_due))
+        lines[1] = to_bytes('My cool task @test_cal due:{} id:1'
+                            .format(formatted_new_due))
         new_ids = editor.parse_tmpfile(lines)
         ids_diff = editor.diff_calendars(old_ids, new_ids)
 
