@@ -14,6 +14,7 @@
 import watdo.editor as editor
 import watdo.model as model
 from watdo.cli_utils import path, confirm, check_directory, parse_config_value
+from watdo._compat import DEFAULT_ENCODING
 import subprocess
 import hashlib
 import tempfile
@@ -64,8 +65,8 @@ def hash_directory(path):
             hash = hash_directory(subpath)
         else:
             hash = hash_file(subpath)
-        rv.update('{}\t{}'.format(subpath, hash))
-        rv.update('\n')
+        rv.update(u'{}\t{}'.format(subpath, hash).encode(DEFAULT_ENCODING))
+        rv.update(b'\n')
 
     return rv.hexdigest()
 
