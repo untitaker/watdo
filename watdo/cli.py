@@ -15,6 +15,7 @@ import watdo.editor as editor
 import watdo.model as model
 from watdo.cli_utils import path, confirm, check_directory, parse_config_value
 import subprocess
+import hashlib
 import tempfile
 import os
 import click
@@ -54,13 +55,41 @@ def make_changes(changes, cfg):
         func(cfg)
 
 
+def hash_directory(path):
+    path = os.path.abspath(path)
+    rv = hashlib.md5()
+    for subpath in os.listdir(path):
+        subpath = os.path.join(path, subpath)
+        if os.path.isdir(subpath):
+            hash = hash_directory(subpath)
+        else:
+            hash = hash_file(subpath)
+        rv.update('{}\t{}'.format(subpath, hash))
+        rv.update('\n')
+
+    return rv.hexdigest()
+
+
+def hash_file(path):
+    path = os.path.abspath(path)
+    rv = hashlib.md5()
+    with open(path, 'rb') as f:
+        rv.update(f.read())
+    return rv.hexdigest()
+
+
+def hash_file_mtime(path):
+    # Broken, reports same mtime after write
+    path = os.path.abspath(path)
+    return os.path.getmtime(path)
+
+
 def launch_editor(cfg, tmpfilesuffix='.markdown', all_tasks=False,
                   calendar=None):
-    tmpfile = tempfile.NamedTemporaryFile(dir=cfg['TMPPATH'],
-                                          suffix=tmpfilesuffix, delete=False)
+    tempfile = os.path.join(cfg['TMPPATH'], hash_directory(cfg['PATH']))
 
-    try:
-        with tmpfile as f:
+    if not os.path.exists(tempfile):
+        with open(tempfile, 'w+') as f:
             tasks = model.walk_calendars(cfg['PATH'])
 
             def task_filter():
@@ -77,14 +106,18 @@ def launch_editor(cfg, tmpfilesuffix='.markdown', all_tasks=False,
                           .format(calendar))
             )
             old_ids = editor.generate_tmpfile(f, task_filter(), header)
+    else:
+        with open(tempfile, 'rb') as f:
+            old_ids = editor.parse_tmpfile(f)
 
+    try:
         new_ids = None
         while new_ids is None:
-            cmd = cfg['EDITOR'] + ' ' + tmpfile.name
+            cmd = cfg['EDITOR'] + ' ' + tempfile
             print('>>> {}'.format(cmd))
             subprocess.call(cmd, shell=True)
 
-            with open(tmpfile.name, 'rb') as f:
+            with open(tempfile, 'rb') as f:
                 try:
                     new_ids = editor.parse_tmpfile(f)
                 except ValueError as e:
@@ -92,9 +125,16 @@ def launch_editor(cfg, tmpfilesuffix='.markdown', all_tasks=False,
                     print('Press enter to edit again...')
                     raw_input()
 
+
+        new_filename = os.path.join(cfg['TMPPATH'],
+                                    hash_directory(cfg['PATH']))
+        os.rename(tempfile, new_filename)
+
         return editor.get_changes(old_ids, new_ids)
-    finally:
-        os.remove(tmpfile.name)
+    except:
+        if os.path.exists(tempfile):
+            os.remove(tempfile)
+        raise
 
 
 def create_config_file():
