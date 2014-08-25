@@ -17,8 +17,12 @@ from watdo.cli_utils import path, confirm, check_directory, parse_config_value
 import subprocess
 import tempfile
 import os
-import ConfigParser
 import click
+
+try:
+    from ConfigParser import SafeConfigParser
+except ImportError:
+    from configparser import SafeConfigParser
 
 
 def confirm_changes(changes):
@@ -111,7 +115,7 @@ def create_config_file():
 
 def get_config_parser(env):
     fname = env.get('WATDO_CONFIG', path('~/.watdo/config'))
-    parser = ConfigParser.SafeConfigParser()
+    parser = SafeConfigParser()
     parser.add_section('watdo')
     if not os.path.exists(fname) and \
        confirm('Config file {} doesn\'t exist. '
