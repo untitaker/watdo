@@ -61,7 +61,7 @@ def test_basic_run(tmpdir):
     result = runner.invoke(cli.main, env={
         'WATDO_CONFIG': str(config),
         'EDITOR': 'echo "Invalid task @wrongcalendar" >> '
-    }, catch_exceptions=False)
+    }, catch_exceptions=False, input='n\n')
     assert result.exception
     assert ('Calendars are not explicitly created. '
             'Please create the directory {} yourself.'

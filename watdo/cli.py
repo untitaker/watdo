@@ -90,7 +90,7 @@ def launch_editor(cfg, tmpfilesuffix='.markdown', all_tasks=False,
     tempfile = os.path.join(cfg['TMPPATH'], hash_directory(cfg['PATH']))
 
     if not os.path.exists(tempfile):
-        with open(tempfile, 'w+') as f:
+        with open(tempfile, 'wb+') as f:
             tasks = model.walk_calendars(cfg['PATH'])
 
             def task_filter():
@@ -133,8 +133,9 @@ def launch_editor(cfg, tmpfilesuffix='.markdown', all_tasks=False,
 
                 except (ValueError, CliError) as e:
                     print(e)
-                    print('Press enter to edit again...')
-                    raw_input()
+                    click.confirm('Do you want to edit again? '
+                                  'Otherwise changes will be discarded.',
+                                  default=True, abort=True)
                 else:
                     break
 
@@ -146,7 +147,7 @@ def launch_editor(cfg, tmpfilesuffix='.markdown', all_tasks=False,
 
 def create_config_file():
     def input(msg):
-        return raw_input(msg + ' ').strip() or None
+        return click.prompt(msg).strip() or None
     cfg = {
         'editor': input('Your favorite editor? [default: $EDITOR]'),
         'path': input('Where are your tasks stored? '
