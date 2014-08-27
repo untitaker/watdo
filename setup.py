@@ -9,12 +9,19 @@
     :copyright: (c) 2013 Markus Unterwaditzer
     :license: MIT, see LICENSE for more details.
 '''
+import ast
+import re
 
 from setuptools import setup, find_packages
 
+_version_re = re.compile(r'__version__\s+=\s+(.*)')
+with open('watdo/__init__.py', 'rb') as f:
+    version = str(ast.literal_eval(_version_re.search(
+        f.read().decode('utf-8')).group(1)))
+
 setup(
     name='watdo',
-    version='0.2.1',
+    version=version,
     author='Markus Unterwaditzer',
     author_email='markus@unterwaditzer.net',
     url='https://github.com/untitaker/watdo',
