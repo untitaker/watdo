@@ -222,11 +222,6 @@ def _extract_id(flags):
 
 def diff_calendars(ids_a, ids_b):
     '''Get difference between two ``ids`` objects'''
-    if set(x.calendar for x in ids_a.values()) != \
-            set(x.calendar for x in ids_b.values()):
-        raise ParsingError('Adding, renaming and deleting calendars is not '
-                           'supported.', set(ids_a), set(ids_b))
-
     task_ids = set(ids_a).union(ids_b)
     for task_id in task_ids:
         if task_id not in ids_a and task_id in ids_b:
@@ -286,5 +281,6 @@ def _change_add(task):
 
 def _change_delete(task):
     def inner(cfg):
-        os.remove(task.filepath)
+        if task.filepath is not None:
+            os.remove(task.filepath)
     return inner

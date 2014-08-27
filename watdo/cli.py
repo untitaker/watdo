@@ -13,11 +13,11 @@
 
 import watdo.editor as editor
 import watdo.model as model
-from watdo.cli_utils import path, confirm, check_directory, parse_config_value
-from watdo._compat import DEFAULT_ENCODING
+from .cli_utils import path, confirm, check_directory, parse_config_value
+from ._compat import DEFAULT_ENCODING
+from .exceptions import CliError
 import subprocess
 import hashlib
-import tempfile
 import os
 import click
 
@@ -86,7 +86,7 @@ def hash_file_mtime(path):
 
 
 def launch_editor(cfg, tmpfilesuffix='.markdown', all_tasks=False,
-                  calendar=None):
+                  calendar=None, confirmation=True):
     tempfile = os.path.join(cfg['TMPPATH'], hash_directory(cfg['PATH']))
 
     if not os.path.exists(tempfile):
@@ -113,7 +113,7 @@ def launch_editor(cfg, tmpfilesuffix='.markdown', all_tasks=False,
 
     try:
         new_ids = None
-        while new_ids is None:
+        while True:
             cmd = cfg['EDITOR'] + ' ' + tempfile
             print('>>> {}'.format(cmd))
             subprocess.call(cmd, shell=True)
@@ -121,17 +121,23 @@ def launch_editor(cfg, tmpfilesuffix='.markdown', all_tasks=False,
             with open(tempfile, 'rb') as f:
                 try:
                     new_ids = editor.parse_tmpfile(f)
-                except ValueError as e:
+                    new_filename = os.path.join(cfg['TMPPATH'],
+                                                hash_directory(cfg['PATH']))
+
+                    changes = editor.get_changes(old_ids, new_ids)
+
+                    if confirmation:
+                        changes = confirm_changes(changes)
+                    make_changes(changes, cfg)
+                    os.rename(tempfile, new_filename)
+
+                except (ValueError, CliError) as e:
                     print(e)
                     print('Press enter to edit again...')
                     raw_input()
+                else:
+                    break
 
-
-        new_filename = os.path.join(cfg['TMPPATH'],
-                                    hash_directory(cfg['PATH']))
-        os.rename(tempfile, new_filename)
-
-        return editor.get_changes(old_ids, new_ids)
     except:
         if os.path.exists(tempfile):
             os.remove(tempfile)
@@ -220,14 +226,12 @@ def _get_cli():
         ctx.obj['show_all_tasks'] = all
 
         if not ctx.args:
-            changes = launch_editor(
+            launch_editor(
                 cfg,
                 all_tasks=ctx.obj.get('show_all_tasks', False),
-                calendar=calendar or None
+                calendar=calendar or None,
+                confirmation=ctx.obj['confirmation']
             )
-            if ctx.obj['confirmation']:
-                changes = confirm_changes(changes)
-            make_changes(changes, cfg)
 
     @cli.command()
     @click.argument('summary')

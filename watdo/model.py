@@ -15,6 +15,7 @@ import icalendar.tools
 import os
 
 from ._compat import string_types, to_unicode
+from .exceptions import CliError
 
 
 class Task(object):
@@ -90,6 +91,11 @@ class Task(object):
             self.random_filename()
             if self.filepath is None:
                 raise ValueError('basepath and calendar must be set.')
+        calendar_path = os.path.join(self.basepath, self.calendar)
+        if not os.path.exists(calendar_path):
+            raise CliError('Calendars are not explicitly created. '
+                           'Please create the directory {} yourself.'
+                           .format(calendar_path))
         with open(self.filepath, mode) as f:
             f.write(self.vcal.to_ical())
         while self._old_filepaths:
