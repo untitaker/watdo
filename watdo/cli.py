@@ -13,9 +13,11 @@
 
 import watdo.editor as editor
 import watdo.model as model
-from watdo.cli_utils import path, confirm, check_directory, parse_config_value
+from .cli_utils import path, confirm, check_directory, parse_config_value
+from ._compat import DEFAULT_ENCODING
+from .exceptions import CliError
 import subprocess
-import tempfile
+import hashlib
 import os
 import click
 
@@ -54,13 +56,32 @@ def make_changes(changes, cfg):
         func(cfg)
 
 
-def launch_editor(cfg, tmpfilesuffix='.markdown', all_tasks=False,
-                  calendar=None):
-    tmpfile = tempfile.NamedTemporaryFile(dir=cfg['TMPPATH'],
-                                          suffix=tmpfilesuffix, delete=False)
+def hash_directory(path):
+    path = os.path.abspath(path)
+    rv = hashlib.md5()
+    for subpath in os.listdir(path):
+        subpath = os.path.join(path, subpath)
+        if os.path.isdir(subpath):
+            hash = hash_directory(subpath)
+        else:
+            hash = hash_file(subpath)
+        rv.update(u'{}\t{}'.format(subpath, hash).encode(DEFAULT_ENCODING))
+        rv.update(b'\n')
 
-    try:
-        with tmpfile as f:
+    return rv.hexdigest()
+
+
+def hash_file(path):
+    path = os.path.abspath(path)
+    return '{:.9f}'.format(os.path.getmtime(path))
+
+
+def launch_editor(cfg, all_tasks=False,
+                  calendar=None, confirmation=True):
+    tempfile = os.path.join(cfg['TMPPATH'], hash_directory(cfg['PATH']))
+
+    if not os.path.exists(tempfile):
+        with open(tempfile, 'wb+') as f:
             tasks = model.walk_calendars(cfg['PATH'])
 
             def task_filter():
@@ -77,29 +98,47 @@ def launch_editor(cfg, tmpfilesuffix='.markdown', all_tasks=False,
                           .format(calendar))
             )
             old_ids = editor.generate_tmpfile(f, task_filter(), header)
+    else:
+        with open(tempfile, 'rb') as f:
+            old_ids = editor.parse_tmpfile(f)
 
+    try:
         new_ids = None
-        while new_ids is None:
-            cmd = cfg['EDITOR'] + ' ' + tmpfile.name
+        while True:
+            cmd = cfg['EDITOR'] + ' ' + tempfile
             print('>>> {}'.format(cmd))
             subprocess.call(cmd, shell=True)
 
-            with open(tmpfile.name, 'rb') as f:
+            with open(tempfile, 'rb') as f:
                 try:
                     new_ids = editor.parse_tmpfile(f)
-                except ValueError as e:
-                    print(e)
-                    print('Press enter to edit again...')
-                    raw_input()
+                    new_filename = os.path.join(cfg['TMPPATH'],
+                                                hash_directory(cfg['PATH']))
 
-        return editor.get_changes(old_ids, new_ids)
-    finally:
-        os.remove(tmpfile.name)
+                    changes = editor.get_changes(old_ids, new_ids)
+
+                    if confirmation:
+                        changes = confirm_changes(changes)
+                    make_changes(changes, cfg)
+                    os.rename(tempfile, new_filename)
+
+                except (ValueError, CliError) as e:
+                    print(e)
+                    click.confirm('Do you want to edit again? '
+                                  'Otherwise changes will be discarded.',
+                                  default=True, abort=True)
+                else:
+                    break
+
+    except:
+        if os.path.exists(tempfile):
+            os.remove(tempfile)
+        raise
 
 
 def create_config_file():
     def input(msg):
-        return raw_input(msg + ' ').strip() or None
+        return click.prompt(msg).strip() or None
     cfg = {
         'editor': input('Your favorite editor? [default: $EDITOR]'),
         'path': input('Where are your tasks stored? '
@@ -179,14 +218,12 @@ def _get_cli():
         ctx.obj['show_all_tasks'] = all
 
         if not ctx.args:
-            changes = launch_editor(
+            launch_editor(
                 cfg,
                 all_tasks=ctx.obj.get('show_all_tasks', False),
-                calendar=calendar or None
+                calendar=calendar or None,
+                confirmation=ctx.obj['confirmation']
             )
-            if ctx.obj['confirmation']:
-                changes = confirm_changes(changes)
-            make_changes(changes, cfg)
 
     @cli.command()
     @click.argument('summary')
