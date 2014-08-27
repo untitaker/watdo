@@ -71,21 +71,9 @@ def hash_directory(path):
     return rv.hexdigest()
 
 
-def hash_file_slow(path):
+def hash_file(path):
     path = os.path.abspath(path)
-    rv = hashlib.md5()
-    with open(path, 'rb') as f:
-        rv.update(f.read())
-    return rv.hexdigest()
-
-
-def hash_file_mtime(path):
-    # Broken, reports same mtime after write
-    path = os.path.abspath(path)
-    return os.path.getmtime(path)
-
-
-hash_file = hash_file_slow
+    return '{:.9f}'.format(os.path.getmtime(path))
 
 
 def launch_editor(cfg, all_tasks=False,
