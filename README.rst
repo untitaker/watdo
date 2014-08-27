@@ -2,6 +2,10 @@
 watdo
 =====
 
+.. image:: https://travis-ci.org/untitaker/watdo.svg?branch=master
+    :target: https://travis-ci.org/untitaker/watdo
+
+
 A task-manager for the command line
 ===================================
 
