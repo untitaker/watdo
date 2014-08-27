@@ -71,7 +71,7 @@ def hash_directory(path):
     return rv.hexdigest()
 
 
-def hash_file(path):
+def hash_file_slow(path):
     path = os.path.abspath(path)
     rv = hashlib.md5()
     with open(path, 'rb') as f:
@@ -85,7 +85,10 @@ def hash_file_mtime(path):
     return os.path.getmtime(path)
 
 
-def launch_editor(cfg, tmpfilesuffix='.markdown', all_tasks=False,
+hash_file = hash_file_slow
+
+
+def launch_editor(cfg, all_tasks=False,
                   calendar=None, confirmation=True):
     tempfile = os.path.join(cfg['TMPPATH'], hash_directory(cfg['PATH']))
 
