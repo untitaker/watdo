@@ -14,10 +14,9 @@
 import watdo.editor as editor
 import watdo.model as model
 from .cli_utils import path, confirm, check_directory, parse_config_value
-from ._compat import DEFAULT_ENCODING
 from .exceptions import CliError
 import subprocess
-import hashlib
+import tempfile
 import os
 import click
 
@@ -56,32 +55,11 @@ def make_changes(changes, cfg):
         func(cfg)
 
 
-def hash_directory(path):
-    path = os.path.abspath(path)
-    rv = hashlib.md5()
-    for subpath in os.listdir(path):
-        subpath = os.path.join(path, subpath)
-        if os.path.isdir(subpath):
-            hash = hash_directory(subpath)
-        else:
-            hash = hash_file(subpath)
-        rv.update(u'{}\t{}'.format(subpath, hash).encode(DEFAULT_ENCODING))
-        rv.update(b'\n')
+def launch_editor(cfg, all_tasks=False, calendar=None, confirmation=True):
+    tmpfile = tempfile.NamedTemporaryFile(dir=cfg['TMPPATH'], delete=False)
 
-    return rv.hexdigest()
-
-
-def hash_file(path):
-    path = os.path.abspath(path)
-    return '{:.9f}'.format(os.path.getmtime(path))
-
-
-def launch_editor(cfg, all_tasks=False,
-                  calendar=None, confirmation=True):
-    tempfile = os.path.join(cfg['TMPPATH'], hash_directory(cfg['PATH']))
-
-    if not os.path.exists(tempfile):
-        with open(tempfile, 'wb+') as f:
+    try:
+        with tmpfile as f:
             tasks = model.walk_calendars(cfg['PATH'])
 
             def task_filter():
@@ -98,29 +76,22 @@ def launch_editor(cfg, all_tasks=False,
                           .format(calendar))
             )
             old_ids = editor.generate_tmpfile(f, task_filter(), header)
-    else:
-        with open(tempfile, 'rb') as f:
-            old_ids = editor.parse_tmpfile(f)
 
-    try:
         new_ids = None
-        while True:
-            cmd = cfg['EDITOR'] + ' ' + tempfile
+        while new_ids is None:
+            cmd = cfg['EDITOR'] + ' ' + tmpfile.name
             print('>>> {}'.format(cmd))
             subprocess.call(cmd, shell=True)
 
-            with open(tempfile, 'rb') as f:
+            with open(tmpfile.name, 'rb') as f:
                 try:
                     new_ids = editor.parse_tmpfile(f)
-                    new_filename = os.path.join(cfg['TMPPATH'],
-                                                hash_directory(cfg['PATH']))
 
                     changes = editor.get_changes(old_ids, new_ids)
 
                     if confirmation:
                         changes = confirm_changes(changes)
                     make_changes(changes, cfg)
-                    os.rename(tempfile, new_filename)
 
                 except (ValueError, CliError) as e:
                     print(e)
@@ -129,11 +100,8 @@ def launch_editor(cfg, all_tasks=False,
                                   default=True, abort=True)
                 else:
                     break
-
-    except:
-        if os.path.exists(tempfile):
-            os.remove(tempfile)
-        raise
+    finally:
+        os.remove(tmpfile.name)
 
 
 def create_config_file():
