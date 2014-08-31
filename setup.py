@@ -28,7 +28,7 @@ setup(
     description='Task-manager for the command line.',
     license='MIT',
     long_description=open('README.rst').read(),
-    packages=find_packages(),
+    packages=find_packages(exclude=['tests.*', 'tests']),
     include_package_data=True,
     entry_points={
         'console_scripts': ['watdo = watdo.cli:main']
