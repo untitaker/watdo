@@ -144,8 +144,7 @@ def _get_cli():
                         'parameter in the config file.'))
     @click.option('--all/--pending', '-a',
                   help='Show all tasks, not only unfinished ones.')
-    @click.option('--calendar', '-c', nargs=-1, multiple=True,
-                  help='The calendar to show')
+    @click.option('--calendar', '-c', help='The calendar to show')
     @click.pass_context
     def cli(ctx, confirm, all, calendar):
         if ctx.obj is None:
@@ -185,7 +184,7 @@ def _get_cli():
         ctx.obj['confirmation'] = confirm
         ctx.obj['show_all_tasks'] = all
 
-        if not ctx.args:
+        if not ctx.invoked_subcommand:
             launch_editor(
                 cfg,
                 all_tasks=ctx.obj.get('show_all_tasks', False),
