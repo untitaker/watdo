@@ -27,7 +27,7 @@ A task-manager for the command line
 Simple usage of watdo
 =====================
 
-1. Install watdo with ``pip install --user watdo``.
+1. Install watdo with ``pip install --user git+https://github.com/untitaker/watdo``.
 
 2. Run ``watdo`` from the command line. It will ask you a few questions, all of
    which you can skip if you don't care.
