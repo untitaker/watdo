@@ -9,14 +9,10 @@ watdo
 A task-manager for the command line
 ===================================
 
-* Watdo stores task lists as directories and tasks as `iCalendar
-  <https://en.wikipedia.org/wiki/ICalendar>`_ files in these directories.
-  Because CalDAV basically uses the same storage structure, a neat hack can be
-  used to access tasks of some CalDAV servers using watdo and davfs.
-
-* Watdo will open a file containing your tasks in an editor of your choice.
-  Any changes you make to that file will be mirrored to the described storage
-  system after closing the editor.
+* Watdo just opens a `todo.txt
+  <https://github.com/ginatrapani/todo.txt-cli/wiki/The-Todo.txt-Format>`_-like
+  file with your favorite editor.  Any changes you make to that file will be
+  mirrored to the described storage system after closing the editor.
 
 * You can use `vdirsyncer <https://github.com/untitaker/vdirsyncer>`_ to sync
   your tasks with online services.
@@ -32,9 +28,7 @@ Simple usage of watdo
 2. Copy ``example.cfg`` to ``~/.watdo/config`` and edit it if you need to. Then
    run ``watdo`` from the command line.
 
-3. Your favorite editor should open. Edit the file as you wish. It's a file
-   whose format kind-of resembles `todo.txt
-   <https://github.com/ginatrapani/todo.txt-cli/wiki/The-Todo.txt-Format>`_.
+3. Your favorite editor should open.
 
    The first line of a task contains the summary and some other metadata. It
    looks something like this::
