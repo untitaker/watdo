@@ -29,8 +29,8 @@ Simple usage of watdo
 
 1. Install watdo with ``pip install --user git+https://github.com/untitaker/watdo``.
 
-2. Run ``watdo`` from the command line. It will ask you a few questions, all of
-   which you can skip if you don't care.
+2. Copy ``example.cfg`` to ``~/.watdo/config`` and edit it if you need to. Then
+   run ``watdo`` from the command line.
 
 3. Your favorite editor should open. Edit the file as you wish. It's a file
    whose format kind-of resembles `todo.txt

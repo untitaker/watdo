@@ -273,7 +273,7 @@ def _change_modify(old_task, new_task):
 
 def _change_add(task):
     def inner(cfg):
-        task.basepath = cfg['PATH']
+        task.basepath = cfg['path']
         task.write(create=True)
 
     return inner

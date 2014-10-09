@@ -55,12 +55,12 @@ def make_changes(changes, cfg):
         func(cfg)
 
 
-def launch_editor(cfg, all_tasks=False, calendar=None, confirmation=True):
-    tmpfile = tempfile.NamedTemporaryFile(dir=cfg['TMPPATH'], delete=False)
+def launch_editor(cfg, all_tasks=False, calendar=None):
+    tmpfile = tempfile.NamedTemporaryFile(dir=cfg['tmppath'], delete=False)
 
     try:
         with tmpfile as f:
-            tasks = model.walk_calendars(cfg['PATH'])
+            tasks = model.walk_calendars(cfg['path'])
 
             def task_filter():
                 for task in tasks:
@@ -79,7 +79,7 @@ def launch_editor(cfg, all_tasks=False, calendar=None, confirmation=True):
 
         new_ids = None
         while new_ids is None:
-            cmd = cfg['EDITOR'] + ' ' + tmpfile.name
+            cmd = cfg['editor'] + ' ' + tmpfile.name
             print('>>> {}'.format(cmd))
             subprocess.call(cmd, shell=True)
 
@@ -89,7 +89,7 @@ def launch_editor(cfg, all_tasks=False, calendar=None, confirmation=True):
 
                     changes = editor.get_changes(old_ids, new_ids)
 
-                    if confirmation:
+                    if cfg['confirmation']:
                         changes = confirm_changes(changes)
                     make_changes(changes, cfg)
 
@@ -104,34 +104,14 @@ def launch_editor(cfg, all_tasks=False, calendar=None, confirmation=True):
         os.remove(tmpfile.name)
 
 
-def create_config_file():
-    def input(msg):
-        return click.prompt(msg).strip() or None
-    cfg = {
-        'editor': input('Your favorite editor? [default: $EDITOR]'),
-        'path': input('Where are your tasks stored? '
-                      '[default: ~/.watdo/tasks/]'),
-        'tmppath': input('Where should tmpfiles for editing be stored? '
-                         '[default: ~/.watdo/tmp/]'),
-        'confirmation': str(
-            confirm('Should watdo ask for confirmation of the '
-                    'changes after closing the editor? (Y/n) '))
-    }
-    return ((k, v) for k, v in cfg.items() if v)
-
-
 def get_config_parser(env):
     fname = env.get('WATDO_CONFIG', path('~/.watdo/config'))
     parser = SafeConfigParser()
     parser.add_section('watdo')
-    if not os.path.exists(fname) and \
-       confirm('Config file {} doesn\'t exist. '
-               'Create? (Y/n)'.format(fname)):
-        check_directory(os.path.dirname(fname))
-        for k, v in create_config_file():
-            parser.set('watdo', k, v)
-        with open(fname, 'wb+') as f:
-            parser.write(f)
+    if not os.path.exists(fname):
+        raise CliError('Config file {} doesn\'t exist. Please create it or '
+                       'use the WATDO_CONFIG environment variable to point '
+                       'watdo to a different location.')
 
     parser.read(fname)
     return dict(parser.items('watdo'))
@@ -155,25 +135,21 @@ def _get_cli():
             ctx.abort()
 
         file_cfg = get_config_parser(os.environ)
-        ctx.obj['cfg'] = cfg = {
-            'PATH': path(
-                os.environ.get('WATDO_PATH') or
-                file_cfg.get('path') or
-                '~/.watdo/tasks/'
-            ),
-            'TMPPATH': path(
-                os.environ.get('WATDO_TMPPATH') or
-                file_cfg.get('tmppath') or
-                '~/.watdo/tmp/'
-            ),
-            'EDITOR': (
-                os.environ.get('WATDO_EDITOR') or
-                file_cfg.get('editor') or
-                os.environ.get('EDITOR') or
-                bail_out('No editor could be determined. Make sure you\'ve '
-                         'got either $WATDO_EDITOR or $EDITOR set.')
-            )
-        }
+
+        ctx.obj['path'] =  path(os.environ.get('WATDO_PATH') or
+                                file_cfg.get('path') or
+                                '~/.watdo/tasks/')
+
+        ctx.obj['tmppath'] = path(os.environ.get('WATDO_TMPPATH') or
+                                  file_cfg.get('tmppath') or
+                                  '~/.watdo/tmp/')
+
+        ctx.obj['editor'] = (os.environ.get('WATDO_EDITOR') or
+                             file_cfg.get('editor') or
+                             os.environ.get('EDITOR') or
+                             bail_out('No editor could be determined. Make '
+                                      'sure you\'ve got either $WATDO_EDITOR '
+                                      'or $EDITOR set.'))
 
         confirm_default = parse_config_value(
             file_cfg.get('confirmation', 'true'))
@@ -186,10 +162,9 @@ def _get_cli():
 
         if not ctx.invoked_subcommand:
             launch_editor(
-                cfg,
+                ctx.obj,
                 all_tasks=ctx.obj.get('show_all_tasks', False),
-                calendar=calendar or None,
-                confirmation=ctx.obj['confirmation']
+                calendar=calendar or None
             )
 
     @cli.command()
@@ -203,7 +178,7 @@ def _get_cli():
         # appropriate encoding is, but it probably is utf-8 in most cases.
         _, t = editor.parse_summary_header(summary.decode('utf-8'))
         t.description = description
-        t.basepath = ctx.obj['cfg']['PATH']
+        t.basepath = ctx.obj['path']
         print(u'Creating task: "{}" in {}'.format(t.summary, t.calendar))
         t.write(create=True)
 
