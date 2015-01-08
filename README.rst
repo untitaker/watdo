@@ -9,15 +9,17 @@ watdo
 A task-manager for the command line
 ===================================
 
-* Watdo just opens a `todo.txt
-  <https://github.com/ginatrapani/todo.txt-cli/wiki/The-Todo.txt-Format>`_-like
-  file with your favorite editor.  Any changes you make to that file will be
-  mirrored to the described storage system after closing the editor.
+* Watdo opens a todo.txt_-like file with your favorite editor. Any changes you
+  make to that file will be mirrored to a folder of iCalendar files (vdir_)
+  after closing the editor.
 
-* You can use `vdirsyncer <https://github.com/untitaker/vdirsyncer>`_ to sync
-  your tasks with online services.
+* You can use vdirsyncer_ to sync your tasks with online services.
 
 * watdo works with Python 2.7+
+
+.. _todo.txt: https://github.com/ginatrapani/todo.txt-cli/wiki/The-Todo.txt-Format
+.. _vdir: http://vdirsyncer.readthedocs.org/en/stable/vdir.html
+.. _vdirsyncer: https://github.com/untitaker/vdirsyncer
 
 
 Simple usage of watdo
