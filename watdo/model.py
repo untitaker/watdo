@@ -10,9 +10,10 @@
     :license: MIT, see LICENSE for more details.
 '''
 import datetime
+import os
+
 import icalendar
 import icalendar.tools
-import os
 
 from ._compat import string_types, to_unicode
 from .exceptions import CliError

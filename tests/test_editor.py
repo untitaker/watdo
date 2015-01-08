@@ -7,6 +7,8 @@
     :license: MIT, see LICENSE for more details.
 '''
 
+import datetime
+
 import pytest
 
 try:
@@ -14,10 +16,9 @@ try:
 except ImportError:
     from StringIO import StringIO as BytesIO
 
-from watdo.model import Task, ParsingError
 from watdo._compat import to_bytes
 import watdo.editor as editor
-import datetime
+from watdo.model import ParsingError, Task
 
 
 def test_basic():

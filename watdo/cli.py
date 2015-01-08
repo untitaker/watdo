@@ -10,19 +10,18 @@
     :license: MIT, see LICENSE for more details.
 '''
 
-
-import watdo.editor as editor
-import watdo.model as model
-from .cli_utils import path, parse_config_value
-from .exceptions import CliError
-from ._compat import to_unicode
-import subprocess
 import functools
-import tempfile
 import os
+import subprocess
 import sys
+import tempfile
+
 import click
 
+from . import editor, model
+from ._compat import to_unicode
+from .cli_utils import parse_config_value, path
+from .exceptions import CliError
 try:
     from ConfigParser import SafeConfigParser
 except ImportError:

@@ -10,10 +10,11 @@
     :license: MIT, see LICENSE for more details.
 '''
 
-from .model import Task, ParsingError
-from ._compat import text_type, to_unicode
 import datetime
 import os
+
+from ._compat import text_type, to_unicode
+from .model import ParsingError, Task
 
 DESCRIPTION_INDENT = u'    '
 DATE_FORMAT = '%Y-%m-%d'

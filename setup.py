@@ -9,10 +9,11 @@
     :copyright: (c) 2013 Markus Unterwaditzer
     :license: MIT, see LICENSE for more details.
 '''
+
 import ast
 import re
 
-from setuptools import setup, find_packages
+from setuptools import find_packages, setup
 
 _version_re = re.compile(r'__version__\s+=\s+(.*)')
 with open('watdo/__init__.py', 'rb') as f:
