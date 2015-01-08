@@ -13,12 +13,14 @@
 
 import watdo.editor as editor
 import watdo.model as model
-from .cli_utils import path, confirm, check_directory, parse_config_value
+from .cli_utils import path, parse_config_value
 from .exceptions import CliError
 from ._compat import to_unicode
 import subprocess
+import functools
 import tempfile
 import os
+import sys
 import click
 
 try:
@@ -112,10 +114,21 @@ def get_config_parser(env):
     if not os.path.exists(fname):
         raise CliError('Config file {} doesn\'t exist. Please create it or '
                        'use the WATDO_CONFIG environment variable to point '
-                       'watdo to a different location.')
+                       'watdo to a different location.'.format(fname))
 
     parser.read(fname)
     return dict(parser.items('watdo'))
+
+
+def catch_errors(f):
+    @functools.wraps(f)
+    def inner(*args, **kwargs):
+        try:
+            return f(*args, **kwargs)
+        except CliError as e:
+            print(str(e))
+            sys.exit(1)
+    return inner
 
 
 def _get_cli():
@@ -127,6 +140,7 @@ def _get_cli():
                   help='Show all tasks, not only unfinished ones.')
     @click.option('--calendar', '-c', help='The calendar to show')
     @click.pass_context
+    @catch_errors
     def cli(ctx, confirm, all, calendar):
         if ctx.obj is None:
             ctx.obj = {}
@@ -137,9 +151,9 @@ def _get_cli():
 
         file_cfg = get_config_parser(os.environ)
 
-        ctx.obj['path'] =  path(os.environ.get('WATDO_PATH') or
-                                file_cfg.get('path') or
-                                '~/.watdo/tasks/')
+        ctx.obj['path'] = path(os.environ.get('WATDO_PATH') or
+                               file_cfg.get('path') or
+                               '~/.watdo/tasks/')
 
         ctx.obj['tmppath'] = path(os.environ.get('WATDO_TMPPATH') or
                                   file_cfg.get('tmppath') or
@@ -172,6 +186,7 @@ def _get_cli():
     @click.argument('summary')
     @click.option('--description', default='', help='An optional description.')
     @click.pass_context
+    @catch_errors
     def new(ctx, summary, description):
         '''Create a new task. The summary has the same format as the first
         lines of a task inside the editor.'''
