@@ -15,6 +15,7 @@ import watdo.editor as editor
 import watdo.model as model
 from .cli_utils import path, confirm, check_directory, parse_config_value
 from .exceptions import CliError
+from ._compat import to_unicode
 import subprocess
 import tempfile
 import os
@@ -174,9 +175,9 @@ def _get_cli():
     def new(ctx, summary, description):
         '''Create a new task. The summary has the same format as the first
         lines of a task inside the editor.'''
-        # As a command-line argument summary is bytes. Not sure what the
-        # appropriate encoding is, but it probably is utf-8 in most cases.
-        _, t = editor.parse_summary_header(summary.decode('utf-8'))
+        # Not sure what the appropriate encoding is, but it probably is utf-8
+        # in most cases.
+        _, t = editor.parse_summary_header(to_unicode(summary, 'utf-8'))
         t.description = description
         t.basepath = ctx.obj['path']
         print(u'Creating task: "{}" in {}'.format(t.summary, t.calendar))
