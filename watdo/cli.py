@@ -39,7 +39,7 @@ def confirm_changes(changes):
         reverted = None
         while reverted is None:
             try:
-                reverted = [int(x.strip()) for x in raw_input('> ').split()]
+                reverted = [int(x.strip()) for x in click.prompt('> ').split()]
             except ValueError:
                 print('Invalid input.')
                 print('If you want to undo number 1 and 2, enter: 1 2')

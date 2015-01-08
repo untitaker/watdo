@@ -31,10 +31,3 @@ def path(p):
     p = os.path.expanduser(p)
     p = os.path.abspath(p)
     return p
-
-
-def confirm(message='Are you sure? (Y/n)'):
-    inp = raw_input(message).lower().strip()
-    if not inp or inp == 'y':
-        return True
-    return False

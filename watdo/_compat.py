@@ -25,7 +25,7 @@ def to_bytes(x, encoding=DEFAULT_ENCODING):
     return x
 
 if PY2:
-    text_type = unicode
+    text_type = unicode  # flake8: noqa
     to_native = to_bytes
 else:
     text_type = str
