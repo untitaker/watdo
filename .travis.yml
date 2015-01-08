@@ -6,7 +6,8 @@ python:
     - "3.4"
 
 install:
-    - pip install tox
+    - pip install tox flake8
 
 script:
     - tox -e $(echo py$TRAVIS_PYTHON_VERSION | tr -d . | sed -e 's/pypypy/pypy/')
+    - flake8 watdo tests

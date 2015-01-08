@@ -7,5 +7,6 @@
     :license: MIT, see LICENSE for more details.
 '''
 
+
 class CliError(Exception):
     pass

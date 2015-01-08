@@ -7,12 +7,10 @@
     :license: MIT, see LICENSE for more details.
 '''
 
-import time
-
 from click.testing import CliRunner
 
 import watdo.cli as cli
-from watdo._compat import string_types
+
 
 def test_basic_run(tmpdir):
     tasks_dir = tmpdir.mkdir('tasks')
@@ -47,4 +45,4 @@ def test_basic_run(tmpdir):
     assert ('Calendars are not explicitly created. '
             'Please create the directory {} yourself.'
             .format(str(tasks_dir.join('wrongcalendar')))) \
-            in result.output.splitlines()
+        in result.output.splitlines()

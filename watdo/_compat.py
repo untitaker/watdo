@@ -12,10 +12,12 @@ import sys
 PY2 = sys.version_info < (3,)
 DEFAULT_ENCODING = 'utf-8'
 
+
 def to_unicode(x, encoding=DEFAULT_ENCODING):
     if not isinstance(x, text_type):
         return x.decode(encoding)
     return x
+
 
 def to_bytes(x, encoding=DEFAULT_ENCODING):
     if not isinstance(x, bytes):
