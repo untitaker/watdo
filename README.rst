@@ -15,7 +15,7 @@ A task-manager for the command line
 
 * You can use vdirsyncer_ to sync your tasks with online services.
 
-* watdo works with Python 2.7+
+* watdo works with Python 2.7+ and Python 3.3+
 
 .. _todo.txt: https://github.com/ginatrapani/todo.txt-cli/wiki/The-Todo.txt-Format
 .. _vdir: http://vdirsyncer.readthedocs.org/en/stable/vdir.html
