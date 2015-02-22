@@ -42,7 +42,10 @@ def generate_tmpfile(f, tasks, header=u'// watdo',
     return a ``ids`` object'''
 
     ids = {}
-    p = lambda x: f.write(x.encode('utf-8'))
+
+    def p(x):
+        f.write(x.encode('utf-8'))
+
     p(header)
     p(u'\n')
 
