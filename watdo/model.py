@@ -224,15 +224,20 @@ class ParsingError(ValueError):
 def walk_calendar(dirpath):
     for filename in os.listdir(dirpath):
         filepath = os.path.join(dirpath, filename)
-        if not os.path.isfile(filepath):
+        if not os.path.isfile(filepath) or not filepath.endswith('.ics'):
             continue
 
         with open(filepath, 'rb') as f:
             vcal = f.read()
 
-        task = Task(vcal=vcal, filepath=filepath)
-        if task.main is not None:
-            yield task
+        try:
+            task = Task(vcal=vcal, filepath=filepath)
+        except Exception as e:
+            print('Error happened during parsing {}: {}'
+                  .format(filepath, str(e)))
+        else:
+            if task.main is not None:
+                yield task
 
 
 def walk_calendars(path):
