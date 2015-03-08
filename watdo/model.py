@@ -12,9 +12,10 @@
 import datetime
 import os
 
+from atomicwrites import atomic_write
+
 import icalendar
 import icalendar.tools
-from atomicwrites import atomic_write
 
 from ._compat import string_types, to_unicode
 from .exceptions import CliError
@@ -85,7 +86,6 @@ class Task(object):
         self._main = val
 
     def write(self, create=False):
-        mode = 'wb' if not create and not self._old_filepaths else 'wb+'
         if self.filename is None:
             if not create:
                 raise ValueError('Create arg must be true '
@@ -98,7 +98,7 @@ class Task(object):
             raise CliError('Calendars are not explicitly created. '
                            'Please create the directory {} yourself.'
                            .format(calendar_path))
-        with atomic_write(self.filepath, overwrite=not create) as f:
+        with atomic_write(self.filepath, mode='wb', overwrite=not create) as f:
             f.write(self.vcal.to_ical())
         while self._old_filepaths:
             os.remove(self._old_filepaths.pop())
