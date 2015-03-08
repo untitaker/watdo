@@ -14,6 +14,7 @@ import os
 
 import icalendar
 import icalendar.tools
+from atomicwrites import atomic_write
 
 from ._compat import string_types, to_unicode
 from .exceptions import CliError
@@ -97,7 +98,7 @@ class Task(object):
             raise CliError('Calendars are not explicitly created. '
                            'Please create the directory {} yourself.'
                            .format(calendar_path))
-        with open(self.filepath, mode) as f:
+        with atomic_write(self.filepath, overwrite=not create) as f:
             f.write(self.vcal.to_ical())
         while self._old_filepaths:
             os.remove(self._old_filepaths.pop())
