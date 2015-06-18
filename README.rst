@@ -1,3 +1,12 @@
+This project is abandoned
+=========================
+
+I'm starting to use `todoman <https://git.barrera.io/hobarrera/todoman/>`_ a
+todo list manager. While it is missing some features I've come to like from
+watdo, I'm not going to use or develop watdo anymore.
+
+----
+
 =====
 watdo
 =====
